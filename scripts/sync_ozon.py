@@ -66,14 +66,18 @@ def main():
             product["publishedAt"] = published_at
             product["badge"] = badge
 
-    last_id = ""
+    for product in products:
+        product["stock"] = 0
+        product["available"] = False
+
+    cursor = ""
     while True:
         payload = {
             "filter": {"visibility": "ALL"},
-            "limit": 100,
+            "limit": 1000,
         }
-        if last_id:
-            payload["last_id"] = last_id
+        if cursor:
+            payload["cursor"] = cursor
         result = post("/v4/product/info/stocks", payload)
         for item in result.get("items", []):
             product = by_offer.get(str(item.get("offer_id", "")))
@@ -86,10 +90,10 @@ def main():
                 quantity += max(present - reserved, 0)
             product["stock"] = quantity
             product["available"] = quantity > 0
-        next_last_id = result.get("last_id") or ""
-        if not next_last_id or next_last_id == last_id:
+        next_cursor = result.get("cursor") or ""
+        if not next_cursor or next_cursor == cursor:
             break
-        last_id = next_last_id
+        cursor = next_cursor
 
     products.sort(key=lambda product: product.get("publishedAt", ""), reverse=True)
     CATALOG.write_text(
