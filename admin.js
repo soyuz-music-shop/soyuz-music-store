@@ -197,11 +197,45 @@ el('#connect-github').addEventListener('click', async () => {
     setGithubStatus('Подключено. Токен хранится только до закрытия вкладки.', 'success');
     el('#publish-changes').disabled = !dirty;
     el('#upload-excel').disabled = !selectedExcelFiles.length;
+    el('#sync-now').disabled = false;
+    el('#sync-status').textContent = 'Готово к запуску. Обычно обновление занимает 1–5 минут.';
+    el('#sync-status').className = 'field-status success';
   } catch (error) {
     githubToken = '';
     setGithubStatus(`Не удалось подключиться: ${error.message}`, 'error');
   } finally {
     el('#connect-github').disabled = false;
+  }
+});
+
+el('#sync-now').addEventListener('click', async () => {
+  if (!githubToken) return;
+  const button = el('#sync-now');
+  const status = el('#sync-status');
+  button.disabled = true;
+  button.textContent = 'Запускаем…';
+  status.textContent = 'Передаём команду GitHub…';
+  status.className = 'field-status';
+  try {
+    const marker = await github(`/contents/.github/refresh-catalog?ref=${BRANCH}`);
+    await github('/contents/.github/refresh-catalog', {
+      method: 'PUT',
+      body: JSON.stringify({
+        message: 'Запустить обновление каталога сейчас',
+        content: utf8Base64(`Ручной запуск: ${new Date().toISOString()}\n`),
+        sha: marker.sha,
+        branch: BRANCH
+      })
+    });
+    status.textContent = 'Обновление запущено. Новые данные появятся на сайте автоматически, обычно через 1–5 минут.';
+    status.className = 'field-status success';
+    toast('Обновление каталога запущено');
+  } catch (error) {
+    status.textContent = `Не удалось запустить: ${error.message}`;
+    status.className = 'field-status error';
+  } finally {
+    button.disabled = !githubToken;
+    button.textContent = 'Обновить сейчас';
   }
 });
 

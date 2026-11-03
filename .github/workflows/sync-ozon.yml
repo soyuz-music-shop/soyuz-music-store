@@ -2,6 +2,9 @@ name: Обновить каталог из Ozon
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/refresh-catalog"
   schedule:
     - cron: "17 * * * *"
 

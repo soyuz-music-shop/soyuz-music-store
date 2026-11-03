@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=17">
-  <script src="admin.js?v=17" defer></script>
+  <link rel="stylesheet" href="admin.css?v=18">
+  <script src="admin.js?v=18" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -39,9 +39,21 @@
       </div>
     </section>
 
-    <section class="excel-card" aria-labelledby="excel-title">
+    <section class="sync-card" aria-labelledby="sync-title">
       <div>
         <p class="step-number">2</p>
+        <h2 id="sync-title">Обновление каталога из Ozon</h2>
+        <p>Запустите синхронизацию вручную, чтобы сейчас проверить новые позиции, остатки, цены, описания, характеристики и фотографии.</p>
+      </div>
+      <div class="sync-actions">
+        <button class="primary-button" id="sync-now" type="button" disabled>Обновить сейчас</button>
+        <p id="sync-status" class="field-status" role="status" aria-live="polite">Сначала подключите GitHub.</p>
+      </div>
+    </section>
+
+    <section class="excel-card" aria-labelledby="excel-title">
+      <div>
+        <p class="step-number">3</p>
         <h2 id="excel-title">Загрузка товаров из Excel Ozon</h2>
         <p>Подойдут ваши шаблоны «Кино, музыка, видеоигры, софт» и «Печатная книга». Можно выбрать оба файла сразу.</p>
       </div>
@@ -66,7 +78,7 @@
 
     <section class="catalog-admin" aria-labelledby="catalog-admin-title">
       <div class="section-head">
-        <div><p class="step-number">3</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
+        <div><p class="step-number">4</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
         <div class="head-actions"><button class="secondary-button" id="refresh-data" type="button">Обновить список</button><button class="primary-button" id="publish-changes" type="button" disabled>Опубликовать изменения</button></div>
       </div>
       <div class="admin-toolbar">
