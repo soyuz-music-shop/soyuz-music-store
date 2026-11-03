@@ -1,5 +1,6 @@
 (() => {
   const config = window.SOYUZ_AUTH_CONFIG || {};
+  const isAccountPage = document.body.dataset.page === 'account';
   const dialog = document.querySelector('#auth-dialog');
   const form = document.querySelector('#auth-form');
   const entryPanel = document.querySelector('#auth-entry');
@@ -73,8 +74,8 @@
     sessionPhone.textContent = phone;
     profileName.value = name;
     profileEmail.value = email;
-    accountLabel.textContent = signedIn ? (name || phone) : 'Войти';
-    accountButton.setAttribute('aria-label', signedIn ? `Личный кабинет: ${name || phone}` : 'Войти или зарегистрироваться');
+    if (accountLabel) accountLabel.textContent = signedIn ? (name || phone) : 'Войти';
+    if (accountButton) accountButton.setAttribute('aria-label', signedIn ? `Личный кабинет: ${name || phone}` : 'Войти или зарегистрироваться');
   }
 
   async function request(path, body, token = '', method = 'POST') {
@@ -175,17 +176,14 @@
 
   async function addToWaitlist(product) {
     if (!session?.access_token) {
-      setMode('login');
-      setMessage('Войдите или зарегистрируйтесь, чтобы получать уведомления о поступлении.');
-      renderSession();
-      dialog.showModal();
+      window.location.href = 'account.html';
       return false;
     }
     const metadata = session.user?.user_metadata || {};
     if (!metadata.contact_email) {
       profileMessage.textContent = 'Укажите электронную почту, чтобы мы смогли сообщить о поступлении.';
       renderSession();
-      dialog.showModal();
+      if (!isAccountPage) window.location.href = 'account.html';
       return false;
     }
     const response = await fetch(restUrl('/waitlist?on_conflict=user_id,product_id'), {
@@ -219,19 +217,13 @@
     await loadWaitlist();
   }
 
-  accountButton.addEventListener('click', () => {
-    renderSession();
-    if (!configured() && !session) setMessage('Регистрация подготовлена. Для запуска нужно один раз подключить бесплатный проект авторизации.');
-    dialog.showModal();
-  });
-  document.querySelector('.auth-close').addEventListener('click', () => dialog.close());
+  accountButton?.addEventListener('click', () => { window.location.href = 'account.html'; });
+  document.querySelector('.auth-close')?.addEventListener('click', () => { window.location.href = './'; });
   document.querySelector('#auth-home').addEventListener('click', () => {
-    dialog.close();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.location.href = './';
   });
   document.querySelector('#auth-home-public').addEventListener('click', () => {
-    dialog.close();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.location.href = './';
   });
   document.querySelectorAll('[data-auth-mode]').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.authMode)));
 
@@ -269,7 +261,7 @@
       renderSession();
       dispatchAuthChange();
       await loadWaitlist();
-      dialog.close();
+      if (!isAccountPage && typeof dialog.close === 'function') dialog.close();
     } catch (error) {
       const replacements = {
         'Invalid login credentials': 'Неверный номер телефона или пароль.',
@@ -347,7 +339,7 @@
       renderSession();
       dispatchAuthChange();
       dispatchWaitlistChange();
-      dialog.close();
+      if (!isAccountPage && typeof dialog.close === 'function') dialog.close();
     } catch (error) {
       profileMessage.textContent = error.message;
     } finally {

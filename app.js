@@ -461,7 +461,7 @@ themeMedia.addEventListener('change', () => {
   if (!document.documentElement.dataset.theme) renderThemeToggle();
 });
 renderThemeToggle();
-el('#reset-filters').addEventListener('click', () => {
+function resetFilters() {
   const maxPrice = Number(el('#price-range').max);
   state.search = '';
   state.category = 'all';
@@ -477,7 +477,8 @@ el('#reset-filters').addEventListener('click', () => {
   el('#price-output').textContent = money(maxPrice);
   document.querySelector('input[name="category"][value="all"]').checked = true;
   render();
-});
+}
+document.querySelectorAll('[data-reset-filters]').forEach(button => button.addEventListener('click', resetFilters));
 el('#filter-toggle').addEventListener('click', () => el('#filters').classList.toggle('open'));
 el('#load-more').addEventListener('click', () => {
   state.visibleCount += 48;

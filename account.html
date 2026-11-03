@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f3ed" id="theme-color">
+  <meta name="description" content="Личный кабинет интернет-магазина Союз Мьюзик.">
+  <title>Личный кабинет — Союз Мьюзик</title>
+  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=26">
+  <link rel="apple-touch-icon" href="logo.png?v=26">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    const savedTheme = localStorage.getItem('soyuz-theme');
+    if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
+  </script>
+  <link rel="stylesheet" href="styles.css?v=26">
+  <script src="auth-config.js?v=26"></script>
+  <script src="auth.js?v=26" defer></script>
+</head>
+<body class="account-page" data-page="account">
+  <header class="account-page-header">
+    <a class="account-page-brand" href="./" aria-label="Союз Мьюзик — вернуться в магазин">
+      <img class="site-logo" src="logo-theme.png?v=12" alt="Союз Мьюзик" width="48" height="48">
+    </a>
+    <a class="account-back-link" href="./">← Вернуться в магазин</a>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Включить тёмную тему" aria-pressed="false" title="Сменить тему">
+      <svg class="theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+      <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
+      <svg class="theme-icon-moon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.5 14.4A8.5 8.5 0 0 1 9.6 3.5 8.5 8.5 0 1 0 20.5 14.4Z"/></svg>
+    </button>
+  </header>
+
+  <main class="account-page-shell">
+    <section class="auth-dialog account-page-card" id="auth-dialog" aria-label="Личный кабинет">
+      <a class="close-button auth-close" href="./" aria-label="Вернуться в магазин">×</a>
+      <section class="auth-entry" id="auth-entry">
+        <div class="auth-head">
+          <p class="eyebrow">Личный кабинет</p>
+          <h1 id="auth-title">Вход</h1>
+          <p id="auth-subtitle">Войдите по номеру телефона и паролю.</p>
+        </div>
+        <div class="auth-tabs" role="tablist" aria-label="Вход или регистрация">
+          <button class="auth-tab active" type="button" data-auth-mode="login" role="tab" aria-selected="true">Войти</button>
+          <button class="auth-tab" type="button" data-auth-mode="register" role="tab" aria-selected="false">Регистрация</button>
+        </div>
+        <form id="auth-form">
+          <label class="auth-register-field" hidden>Имя
+            <input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Как к вам обращаться">
+          </label>
+          <label class="auth-register-field" hidden>Электронная почта
+            <input id="auth-email" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="name@example.com">
+          </label>
+          <label>Номер телефона
+            <input id="auth-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 999 123-45-67" required>
+          </label>
+          <label>Пароль
+            <input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="Ваш пароль" required>
+          </label>
+          <label class="remember-row"><input id="auth-remember" type="checkbox"> Запомнить меня на этом устройстве</label>
+          <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+          <button class="primary-button auth-submit" type="submit">Войти</button>
+          <button class="account-home-button auth-home-public" id="auth-home-public" type="button">← На главную</button>
+        </form>
+      </section>
+
+      <div class="auth-session" id="auth-session" hidden>
+        <div class="account-panel-heading">
+          <p class="eyebrow">Личный кабинет</p>
+          <h1 id="account-page-title">Мои данные</h1>
+        </div>
+        <p>Вы вошли как <strong id="auth-user-name"></strong></p>
+        <form class="auth-profile" id="auth-profile-form">
+          <label>Имя
+            <input id="auth-profile-name" type="text" autocomplete="name" maxlength="80" required>
+          </label>
+          <label>Электронная почта для уведомлений
+            <input id="auth-profile-email" type="email" inputmode="email" autocomplete="email" maxlength="160" required>
+          </label>
+          <p class="auth-profile-phone">Логин: <strong id="auth-user-phone"></strong></p>
+          <p class="auth-message" id="auth-profile-message" role="status" aria-live="polite"></p>
+          <button class="primary-button auth-profile-save" type="submit">Сохранить данные</button>
+        </form>
+        <section class="auth-waitlist" aria-labelledby="auth-waitlist-title">
+          <div class="auth-waitlist-head">
+            <h2 id="auth-waitlist-title">Мой лист ожидания</h2>
+            <span id="auth-waitlist-count">0</span>
+          </div>
+          <div class="auth-waitlist-list" id="auth-waitlist-list">
+            <p class="auth-waitlist-empty">Список пока пуст.</p>
+          </div>
+        </section>
+        <div class="account-panel-actions">
+          <button class="account-home-button" id="auth-home" type="button">← На главную</button>
+          <button class="account-logout-button" id="auth-logout" type="button">Выйти</button>
+        </div>
+        <button class="danger-button" id="auth-delete" type="button">Удалить аккаунт</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="account-page-footer">
+    <p>© 2026 Союз Мьюзик.</p>
+    <p>Оплата и доставка — через Ozon</p>
+  </footer>
+
+  <script>
+    const themeButton = document.querySelector('#theme-toggle');
+    const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+    const currentTheme = () => document.documentElement.dataset.theme || (themeMedia.matches ? 'dark' : 'light');
+    const renderTheme = () => {
+      const dark = currentTheme() === 'dark';
+      themeButton.dataset.theme = dark ? 'dark' : 'light';
+      themeButton.setAttribute('aria-pressed', String(dark));
+      themeButton.setAttribute('aria-label', dark ? 'Включить светлую тему' : 'Включить тёмную тему');
+      document.querySelector('#theme-color').content = dark ? '#11100e' : '#f6f3ed';
+    };
+    themeButton.addEventListener('click', () => {
+      const nextTheme = currentTheme() === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = nextTheme;
+      localStorage.setItem('soyuz-theme', nextTheme);
+      renderTheme();
+    });
+    renderTheme();
+  </script>
+</body>
+</html>
