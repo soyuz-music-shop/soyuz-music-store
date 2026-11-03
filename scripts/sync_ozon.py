@@ -202,6 +202,15 @@ def product_attributes(product_ids):
     return attributes
 
 
+def product_description(offer_id):
+    try:
+        result = post("/v1/product/info/description", {"offer_id": offer_id}).get("result") or {}
+        return clean_html(result.get("description"))
+    except RuntimeError as error:
+        print(f"Description skipped for {offer_id}: {error}")
+        return ""
+
+
 def stock_map():
     stocks = {}
     cursor = ""
@@ -245,7 +254,7 @@ def image_urls(info, attributes):
     return [text(url) for url in dict.fromkeys(candidates) if text(url).startswith(("http://", "https://"))]
 
 
-def upsert_product(existing, offer_id, info, attributes, stock):
+def upsert_product(existing, offer_id, info, attributes, stock, fresh_description=""):
     specs = attribute_map(attributes)
     name = text(info.get("name") or attributes.get("name") or existing.get("title"))
     artist_hint = find_spec(specs, "исполнитель", "автор произведения", "автор книги", "автор")
@@ -254,7 +263,7 @@ def upsert_product(existing, offer_id, info, attributes, stock):
     images = image_urls(info, attributes) or existing.get("images") or [existing.get("image", "")]
     images = [url for url in images if url]
     published_at, badge = publication_badge(info.get("created_at") or existing.get("publishedAt", ""))
-    description = clean_html(info.get("description") or attributes.get("description")) or existing.get("description", "")
+    description = fresh_description or clean_html(info.get("description") or attributes.get("description")) or existing.get("description", "")
     price = number(info.get("price")) or existing.get("price", 0)
     old_price = number(info.get("old_price")) or existing.get("oldPrice", 0)
     year_value = find_spec(specs, "год издания", "год выпуска", "год выхода")
@@ -282,6 +291,7 @@ def upsert_product(existing, offer_id, info, attributes, stock):
         "genre": find_spec(specs, "жанр") or existing.get("genre", ""),
         "publisher": find_spec(specs, "издатель", "лейбл") or existing.get("publisher", ""),
         "source": existing.get("source") or "ozon-api",
+        "_ozonUpdatedAt": text(info.get("updated_at")) or existing.get("_ozonUpdatedAt", ""),
     }
 
 
@@ -301,7 +311,18 @@ def main():
     changed = 0
     for offer_id, item in info.items():
         existing = by_offer.get(offer_id, {})
-        updated = upsert_product(existing, offer_id, item, attributes.get(offer_id, {}), stocks.get(offer_id, 0))
+        api_updated_at = text(item.get("updated_at"))
+        previous_updated_at = text(existing.get("_ozonUpdatedAt"))
+        needs_description = not existing or (previous_updated_at and api_updated_at and previous_updated_at != api_updated_at)
+        description = product_description(offer_id) if needs_description else ""
+        updated = upsert_product(
+            existing,
+            offer_id,
+            item,
+            attributes.get(offer_id, {}),
+            stocks.get(offer_id, 0),
+            description,
+        )
         if not existing:
             added += 1
         elif updated != existing:
