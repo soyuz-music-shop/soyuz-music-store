@@ -19,7 +19,7 @@ jobs:
       - name: Скачать сайт
         uses: actions/checkout@v5
 
-      - name: Получить даты публикации и остатки
+      - name: Получить новые товары, содержание, фото и остатки
         env:
           OZON_CLIENT_ID: ${{ secrets.OZON_CLIENT_ID }}
           OZON_API_KEY: ${{ secrets.OZON_API_KEY }}
@@ -34,5 +34,5 @@ jobs:
           git config user.name "soyuz-music-bot"
           git config user.email "actions@users.noreply.github.com"
           git add products.json
-          git commit -m "Обновить остатки и новинки из Ozon"
+          git commit -m "Синхронизировать каталог с Ozon"
           git push
