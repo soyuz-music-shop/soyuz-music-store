@@ -1,4 +1,5 @@
 let products = [];
+let artistNames = [];
 
 const state = {
   search: '',
@@ -24,6 +25,33 @@ const normalizeSearchText = value => String(value ?? '')
 const safe = (value) => String(value ?? '').replace(/[&<>'"]/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
 }[char]));
+
+const artistGroup = artist => {
+  const firstLetter = normalizeSearchText(artist).charAt(0).toLocaleUpperCase('ru') || '#';
+  return /[A-ZА-Я0-9]/.test(firstLetter) ? firstLetter : '#';
+};
+
+function renderArtistList(query = '') {
+  const normalizedQuery = normalizeSearchText(query);
+  const groups = new Map();
+  artistNames
+    .filter(artist => !normalizedQuery || normalizeSearchText(artist).includes(normalizedQuery))
+    .forEach(artist => {
+      const letter = artistGroup(artist);
+      if (!groups.has(letter)) groups.set(letter, []);
+      groups.get(letter).push(artist);
+    });
+  const rank = letter => /[А-Я]/.test(letter) ? 0 : /[A-Z]/.test(letter) ? 1 : /[0-9]/.test(letter) ? 2 : 3;
+  const orderedGroups = [...groups.entries()].sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b, 'ru'));
+  el('#artist-dropdown').innerHTML = orderedGroups.length
+    ? orderedGroups.map(([letter, names]) => `<div class="artist-letter">${safe(letter)}</div>${names.map(artist => `<button class="artist-option" type="button" role="option" data-artist="${safe(artist)}">${safe(artist)}</button>`).join('')}`).join('')
+    : '<p class="artist-empty">Исполнители не найдены</p>';
+}
+
+function setArtistDropdown(open) {
+  el('#artist-dropdown').hidden = !open;
+  el('#artist-filter').setAttribute('aria-expanded', String(open));
+}
 
 function descriptionHtml(value) {
   const raw = String(value || '').trim();
@@ -243,7 +271,33 @@ all('input[name="category"]').forEach(input => input.addEventListener('change', 
 el('#artist-filter').addEventListener('input', event => {
   state.artist = event.target.value;
   state.visibleCount = 48;
+  renderArtistList(event.target.value);
+  setArtistDropdown(true);
   render();
+});
+el('#artist-filter').addEventListener('focus', () => {
+  renderArtistList();
+  setArtistDropdown(true);
+});
+el('#artist-filter').addEventListener('keydown', event => {
+  if (event.key === 'Escape') setArtistDropdown(false);
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    setArtistDropdown(true);
+    el('#artist-dropdown .artist-option')?.focus();
+  }
+});
+el('#artist-dropdown').addEventListener('click', event => {
+  const option = event.target.closest('[data-artist]');
+  if (!option) return;
+  state.artist = option.dataset.artist;
+  state.visibleCount = 48;
+  el('#artist-filter').value = state.artist;
+  setArtistDropdown(false);
+  render();
+});
+document.addEventListener('click', event => {
+  if (!event.target.closest('.artist-combobox')) setArtistDropdown(false);
 });
 el('#stock-only').addEventListener('change', event => {
   state.stockOnly = event.target.checked;
@@ -351,9 +405,9 @@ async function loadProducts() {
     all('[data-count]').forEach(node => {
       node.textContent = node.dataset.count === 'all' ? products.length : (counts[node.dataset.count] || 0);
     });
-    const artists = [...new Set(products.map(product => String(product.artist || '').trim()).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, 'ru'));
-    el('#artist-options').innerHTML = artists.map(artist => `<option value="${safe(artist)}"></option>`).join('');
+    artistNames = [...new Set(products.map(product => String(product.artist || '').trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
+    renderArtistList();
     const maxPrice = Math.ceil(Math.max(...products.map(product => product.price), 1000) / 5000) * 5000;
     el('#price-range').max = maxPrice;
     el('#price-range').value = maxPrice;
