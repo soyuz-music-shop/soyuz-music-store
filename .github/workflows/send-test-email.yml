@@ -1,0 +1,29 @@
+name: Отправить тестовое письмо
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipient:
+        description: Получатель тестового письма
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачать сайт
+        uses: actions/checkout@v5
+
+      - name: Отправить письмо «Снова в наличии»
+        env:
+          TEST_EMAIL_RECIPIENT: ${{ inputs.recipient }}
+          MAIL_SMTP_HOST: smtp.mail.ru
+          MAIL_SMTP_PORT: "465"
+          MAIL_SMTP_USERNAME: soyuz_music_shop@mail.ru
+          MAIL_SMTP_PASSWORD: ${{ secrets.MAIL_SMTP_PASSWORD }}
+          MAIL_FROM_EMAIL: "Союз Мьюзик <soyuz_music_shop@mail.ru>"
+        run: python scripts/send_test_email.py
