@@ -3,13 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f3ed" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#11100e" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги с оплатой и доставкой через Ozon.">
   <title>Союз Мьюзик — музыка, которую хочется держать в руках</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <script src="app.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=8">
+  <script src="app.js?v=8" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -22,11 +25,12 @@
       <a href="#new">Новинки</a>
       <a href="#benefits">Преимущества</a>
     </nav>
-    <label class="header-search">
+    <form class="header-search" id="search-form" role="search">
       <span class="sr-only">Поиск по каталогу</span>
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
       <input id="header-search" type="search" placeholder="Поиск по каталогу…" autocomplete="off">
-    </label>
+      <button class="search-button" type="submit">Поиск</button>
+    </form>
     <button class="icon-button" id="favorites-button" type="button" aria-label="Показать избранное">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
       <span class="counter" id="favorite-count">0</span>
@@ -74,7 +78,7 @@
         <div>
           <p class="eyebrow" id="new">В центре внимания</p>
           <h2 id="catalog-title">Каталог</h2>
-          <p><span id="result-count">0</span> товаров найдено</p>
+          <p aria-live="polite"><span id="result-count">0</span> товаров найдено</p>
         </div>
         <div class="catalog-tools">
           <label>Сортировка

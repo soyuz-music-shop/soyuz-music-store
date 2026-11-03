@@ -56,10 +56,24 @@ const categoryColor = {
 };
 
 function filteredProducts() {
-  const query = state.search.trim().toLocaleLowerCase('ru');
+  const normalizeSearchText = value => String(value ?? '')
+    .toLocaleLowerCase('ru')
+    .replace(/ё/g, 'е')
+    .replace(/[^a-zа-я0-9]+/gi, ' ')
+    .trim();
+  const queryTokens = normalizeSearchText(state.search).split(/\s+/).filter(Boolean);
   const result = products.filter(product => {
-    const searchable = `${product.artist} ${product.title} ${product.format} ${product.genre} ${product.publisher}`.toLocaleLowerCase('ru');
-    return (!query || searchable.includes(query))
+    const searchable = normalizeSearchText([
+      product.artist,
+      product.title,
+      product.format,
+      product.detail,
+      product.genre,
+      product.publisher,
+      product.description,
+      ...Object.entries(product.specs || {}).flat()
+    ].join(' '));
+    return (!queryTokens.length || queryTokens.every(token => searchable.includes(token)))
       && (state.category === 'all' || product.category === state.category)
       && (!state.stockOnly || product.available !== false)
       && product.price <= state.maxPrice
@@ -239,8 +253,16 @@ el('#sort-select').addEventListener('change', event => {
   state.visibleCount = 48;
   render();
 });
+el('#search-form').addEventListener('submit', event => {
+  event.preventDefault();
+  state.search = el('#header-search').value;
+  state.visibleCount = 48;
+  render();
+  el('#catalog').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 el('#header-search').addEventListener('input', event => {
-  state.search = event.target.value;
+  if (event.target.value || !state.search) return;
+  state.search = '';
   state.visibleCount = 48;
   render();
 });
