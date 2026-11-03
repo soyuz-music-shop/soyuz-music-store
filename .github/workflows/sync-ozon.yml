@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-ozon
-  cancel-in-progress: true
+  group: catalog-writes
+  cancel-in-progress: false
 
 jobs:
   sync:

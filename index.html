@@ -12,8 +12,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script>if ('scrollRestoration' in history) history.scrollRestoration = 'manual';</script>
-  <link rel="stylesheet" href="styles.css?v=15">
-  <script src="app.js?v=15" defer></script>
+  <link rel="stylesheet" href="styles.css?v=16">
+  <script src="auth-config.js?v=16"></script>
+  <script src="auth.js?v=16" defer></script>
+  <script src="app.js?v=16" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -32,6 +34,10 @@
       <input id="header-search" type="search" placeholder="Поиск по каталогу…" autocomplete="off">
       <button class="search-button" type="submit">Поиск</button>
     </form>
+    <button class="icon-button account-button" id="account-button" type="button" aria-label="Войти или зарегистрироваться">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
+      <span class="account-label" id="account-label">Войти</span>
+    </button>
     <button class="icon-button" id="favorites-button" type="button" aria-label="Показать избранное">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
       <span class="counter" id="favorite-count">0</span>
@@ -144,8 +150,37 @@
   <footer>
     <img class="site-logo" src="logo-theme.png?v=12" alt="" width="72" height="72">
     <p>© <span id="year"></span> Союз Мьюзик.</p>
+    <a class="admin-link" href="admin.html">Админка</a>
     <p>Оплата и доставка — через Ozon</p>
   </footer>
+
+  <dialog class="auth-dialog" id="auth-dialog">
+    <button class="close-button auth-close" type="button" aria-label="Закрыть окно входа">×</button>
+    <div class="auth-head">
+      <p class="eyebrow">Личный кабинет</p>
+      <h2 id="auth-title">Вход</h2>
+      <p id="auth-subtitle">Войдите по номеру телефона и паролю.</p>
+    </div>
+    <div class="auth-tabs" role="tablist" aria-label="Вход или регистрация">
+      <button class="auth-tab active" type="button" data-auth-mode="login" role="tab" aria-selected="true">Войти</button>
+      <button class="auth-tab" type="button" data-auth-mode="register" role="tab" aria-selected="false">Регистрация</button>
+    </div>
+    <form id="auth-form">
+      <label>Номер телефона
+        <input id="auth-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 999 123-45-67" required>
+      </label>
+      <label>Пароль
+        <input id="auth-password" type="password" autocomplete="current-password" minlength="6" placeholder="Ваш пароль" required>
+      </label>
+      <label class="remember-row"><input id="auth-remember" type="checkbox"> Запомнить меня на этом устройстве</label>
+      <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+      <button class="primary-button auth-submit" type="submit">Войти</button>
+    </form>
+    <div class="auth-session" id="auth-session" hidden>
+      <p>Вы вошли как <strong id="auth-user-phone"></strong></p>
+      <button class="text-button" id="auth-logout" type="button">Выйти</button>
+    </div>
+  </dialog>
 
   <dialog class="cart-dialog" id="cart-dialog">
     <div class="dialog-head">

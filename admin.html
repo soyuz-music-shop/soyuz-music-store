@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f3ed" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#11100e" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Админка — Союз Мьюзик</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css?v=16">
+  <script src="admin.js?v=16" defer></script>
+</head>
+<body>
+  <header class="admin-header">
+    <a class="admin-brand" href="index.html"><img src="logo-theme.png?v=12" alt="Союз Мьюзик"><span>Админка</span></a>
+    <a class="back-link" href="index.html">Вернуться в магазин</a>
+  </header>
+
+  <main class="admin-shell">
+    <section class="admin-intro">
+      <div><p class="eyebrow">Управление магазином</p><h1>Каталог без сложных таблиц</h1><p>Редактируйте карточки вручную или загружайте готовые Excel-шаблоны Ozon.</p></div>
+      <span class="connection-badge" id="connection-badge">Не подключено к GitHub</span>
+    </section>
+
+    <section class="setup-card" aria-labelledby="github-title">
+      <div>
+        <p class="step-number">1</p>
+        <h2 id="github-title">Подключение к GitHub</h2>
+        <p>Токен нужен только для сохранения. Он остаётся в памяти вкладки и исчезает после её закрытия.</p>
+      </div>
+      <div class="token-form">
+        <label for="github-token">GitHub token</label>
+        <div><input id="github-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button class="primary-button" id="connect-github" type="button">Подключить</button></div>
+        <p id="github-status" class="field-status" role="status" aria-live="polite">Нужен fine-grained token с доступом Contents: Read and write к репозиторию.</p>
+      </div>
+    </section>
+
+    <section class="excel-card" aria-labelledby="excel-title">
+      <div>
+        <p class="step-number">2</p>
+        <h2 id="excel-title">Загрузка товаров из Excel Ozon</h2>
+        <p>Подойдут ваши шаблоны «Кино, музыка, видеоигры, софт» и «Печатная книга». Можно выбрать оба файла сразу.</p>
+      </div>
+      <div class="drop-zone" id="drop-zone">
+        <input id="excel-files" type="file" accept=".xlsx" multiple>
+        <strong>Перетащите .xlsx сюда</strong>
+        <span>или нажмите, чтобы выбрать файлы</span>
+      </div>
+      <div class="excel-actions">
+        <div id="excel-file-list" class="excel-file-list"><span>Файлы не выбраны</span></div>
+        <button class="primary-button" id="upload-excel" type="button" disabled>Загрузить и обновить каталог</button>
+      </div>
+      <p id="excel-status" class="field-status" role="status" aria-live="polite">Новые товары добавятся, существующие обновятся по артикулу. Остатки затем подтянутся из Ozon API.</p>
+    </section>
+
+    <section class="stats" aria-label="Сводка каталога">
+      <article><span>Всего товаров</span><strong id="stat-total">0</strong></article>
+      <article><span>В продаже</span><strong id="stat-available">0</strong></article>
+      <article><span>Изменено вручную</span><strong id="stat-changed">0</strong></article>
+      <article><span>Скрыто</span><strong id="stat-hidden">0</strong></article>
+    </section>
+
+    <section class="catalog-admin" aria-labelledby="catalog-admin-title">
+      <div class="section-head">
+        <div><p class="step-number">3</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
+        <div class="head-actions"><button class="secondary-button" id="refresh-data" type="button">Обновить список</button><button class="primary-button" id="publish-changes" type="button" disabled>Опубликовать изменения</button></div>
+      </div>
+      <div class="admin-toolbar">
+        <label class="search-field"><span>Поиск</span><input id="admin-search" type="search" placeholder="Артист, название или артикул"></label>
+        <label><span>Категория</span><select id="admin-category"><option value="all">Все</option><option value="vinyl">Винил</option><option value="cd">CD</option><option value="tape">Кассеты</option><option value="book">Книги</option><option value="movie">Фильмы</option></select></label>
+        <label><span>Состояние</span><select id="admin-state"><option value="visible">Все видимые</option><option value="changed">Изменённые</option><option value="manual">Добавленные вручную</option><option value="hidden">Скрытые</option></select></label>
+        <button class="secondary-button add-button" id="add-product" type="button">Добавить товар</button>
+      </div>
+      <p class="unsaved-note" id="unsaved-note" hidden>Есть неопубликованные изменения.</p>
+      <div class="product-admin-list" id="product-admin-list"><p class="loading">Загружаем каталог…</p></div>
+      <button class="secondary-button load-more-admin" id="load-more-admin" type="button" hidden>Показать ещё</button>
+    </section>
+  </main>
+
+  <dialog class="editor-dialog" id="editor-dialog">
+    <form id="product-form">
+      <div class="editor-head"><div><p class="eyebrow">Карточка товара</p><h2 id="editor-title">Редактирование</h2></div><button class="close-button" id="editor-close" type="button" aria-label="Закрыть">×</button></div>
+      <div class="editor-grid">
+        <label>Артикул<input name="id" required></label>
+        <label>Категория<select name="category" required><option value="vinyl">Винил</option><option value="cd">CD</option><option value="tape">Кассета</option><option value="book">Книга</option><option value="movie">Фильм</option></select></label>
+        <label class="wide">Артист / автор<input name="artist" required></label>
+        <label class="wide">Название<input name="title" required></label>
+        <label>Цена, ₽<input name="price" type="number" min="0" step="1" required></label>
+        <label>Зачёркнутая цена, ₽<input name="oldPrice" type="number" min="0" step="1"></label>
+        <label>Остаток<input name="stock" type="number" min="0" step="1"></label>
+        <label class="check-label"><input name="available" type="checkbox"> В продаже</label>
+        <label>Год издания<input name="year" type="number" min="0" max="2100"></label>
+        <label>Дата публикации<input name="publishedAt" type="date"></label>
+        <label>Носитель / формат<input name="format"></label>
+        <label>Короткая деталь<input name="detail"></label>
+        <label>Жанр<input name="genre"></label>
+        <label>Издатель<input name="publisher"></label>
+        <label class="wide">Ссылка на главное фото<input name="image" type="url"></label>
+        <label class="wide">Все фото, по одной ссылке в строке<textarea name="images" rows="4"></textarea></label>
+        <label class="wide">Описание<textarea name="description" rows="7"></textarea></label>
+        <label class="wide">Характеристики: одна строка «Название: значение»<textarea name="specs" rows="7"></textarea></label>
+      </div>
+      <div class="image-preview"><img id="editor-image" alt="Предпросмотр изображения" hidden><span id="editor-image-empty">Нет изображения</span></div>
+      <div class="editor-actions"><button class="secondary-button" id="editor-cancel" type="button">Отмена</button><button class="primary-button" type="submit">Сохранить в черновик</button></div>
+    </form>
+  </dialog>
+
+  <div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
+</body>
+</html>

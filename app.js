@@ -32,6 +32,16 @@ const safe = (value) => String(value ?? '').replace(/[&<>'"]/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
 }[char]));
 
+function splitProductTitle(value) {
+  const text = String(value || '').trim();
+  const bracket = text.indexOf('(');
+  if (bracket <= 0) return { main: text, details: '' };
+  return {
+    main: text.slice(0, bracket).trim(),
+    details: text.slice(bracket).trim()
+  };
+}
+
 const artistGroup = artist => {
   const firstLetter = normalizeSearchText(artist).charAt(0).toLocaleUpperCase('ru') || '#';
   return /[A-ZА-Я0-9]/.test(firstLetter) ? firstLetter : '#';
@@ -139,14 +149,15 @@ function productCard(product) {
     ? `<img class="cover-image" src="${safe(product.image)}" alt="" loading="lazy" decoding="async">`
     : '';
   const carrierLabel = { vinyl: 'LP', cd: 'CD', tape: 'MC', book: 'Книга', movie: 'Фильм' }[product.category] || product.format || product.detail || '';
+  const title = splitProductTitle(product.title);
   return `<article class="product-card" data-category="${safe(product.category)}" data-product="${safe(product.id)}" tabindex="0" aria-label="Подробнее: ${safe(product.artist)} — ${safe(product.title)}">
     <div class="cover ${product.image ? 'has-image' : ''}" style="--cover:${categoryColor[product.category]}" data-mark="${safe(product.artist)}">
       ${cover}
       ${product.badge ? `<span class="badge">${safe(product.badge)}</span>` : ''}
     </div>
     <div class="product-info">
-      <div class="product-title-row"><h3>${safe(product.artist)}</h3><button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button></div>
-      <p class="album">${safe(product.title)}</p>
+      <div class="product-title-row"><div class="product-title-copy"><h3>${safe(product.artist)}</h3>${title.main ? `<h4>${safe(title.main)}</h4>` : ''}</div><button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button></div>
+      ${title.details ? `<p class="album-details">${safe(title.details)}</p>` : '<p class="album-details empty" aria-hidden="true"></p>'}
       ${carrierLabel ? `<div class="chips"><span>${safe(carrierLabel)}</span></div>` : ''}
       <div class="price-row"><span class="price">${money(product.price)}</span><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
       <button class="buy-button" type="button" data-buy="${safe(product.id)}" ${available ? '' : 'disabled'}>${available ? 'В корзину' : 'Сообщить о поступлении'}</button>
@@ -405,9 +416,30 @@ el('#year').textContent = new Date().getFullYear();
 
 async function loadProducts() {
   try {
-    const response = await fetch('products.json');
+    const [response, overridesResponse] = await Promise.all([
+      fetch('products.json'),
+      fetch(`admin-overrides.json?t=${Date.now()}`, { cache: 'no-store' }).catch(() => null)
+    ]);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    products = await response.json();
+    const baseProducts = await response.json();
+    const overrides = overridesResponse?.ok
+      ? await overridesResponse.json()
+      : { items: {}, added: [], deleted: [] };
+    const deleted = new Set((overrides.deleted || []).map(String));
+    const itemOverrides = overrides.items || {};
+    products = baseProducts
+      .filter(product => !deleted.has(String(product.id)))
+      .map(product => ({ ...product, ...(itemOverrides[String(product.id)] || {}) }));
+    const positions = new Map(products.map((product, index) => [String(product.id), index]));
+    (overrides.added || []).forEach(product => {
+      const id = String(product.id || '');
+      if (!id || deleted.has(id)) return;
+      if (positions.has(id)) products[positions.get(id)] = product;
+      else {
+        positions.set(id, products.length);
+        products.push(product);
+      }
+    });
     const validIds = new Set(products.map(product => product.id));
     state.cart = state.cart.filter(id => validIds.has(id));
     state.favorites = new Set([...state.favorites].filter(id => validIds.has(id)));
