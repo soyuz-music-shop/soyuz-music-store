@@ -122,7 +122,13 @@ def notify_waitlist(restocked_ids, products_by_offer):
         "apikey": SUPABASE_SERVICE_ROLE_KEY,
         "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
     }
-    rows = json_request(SUPABASE_URL + query, headers=supabase_headers) or []
+    try:
+        rows = json_request(SUPABASE_URL + query, headers=supabase_headers) or []
+    except Exception as error:
+        # A temporary or misconfigured notification service must never block
+        # catalog, price and stock synchronization.
+        print(f"Waitlist lookup failed; catalog sync will continue: {error}")
+        return
     sent = 0
     failed = 0
     provider = "none"
