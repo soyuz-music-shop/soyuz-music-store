@@ -137,7 +137,7 @@ def notify_waitlist(restocked_ids, products_by_offer):
         product_title = row.get("product_title") or "Товар из листа ожидания"
         customer_name = row.get("customer_name") or "Здравствуйте"
         price = f"{number(product.get('price')):,}".replace(",", " ")
-        subject = f"{product_title} снова в наличии"
+        subject = "Снова в наличии"
         html_body = (
             f"<p>{html.escape(customer_name)}, товар снова появился в наличии:</p>"
             f"<p><strong>{html.escape(product_title)}</strong></p>"
