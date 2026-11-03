@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#f6f3ed" id="theme-color">
   <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги с оплатой и доставкой через Ozon.">
   <title>Союз Мьюзик — музыка, которую хочется держать в руках</title>
-  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=30">
-  <link rel="apple-touch-icon" href="logo.png?v=30">
+  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=31">
+  <link rel="apple-touch-icon" href="logo.png?v=31">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,10 +17,11 @@
     const savedTheme = localStorage.getItem('soyuz-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
   </script>
-  <link rel="stylesheet" href="styles.css?v=30">
-  <script src="auth-config.js?v=30"></script>
-  <script src="auth.js?v=30" defer></script>
-  <script src="app.js?v=30" defer></script>
+  <link rel="stylesheet" href="styles.css?v=31">
+  <script src="auth-config.js?v=31"></script>
+  <script src="auth.js?v=31" defer></script>
+  <script src="external-browser.js?v=31" defer></script>
+  <script src="app.js?v=31" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -109,6 +110,7 @@
           <p class="eyebrow" id="new">В центре внимания</p>
           <h2 id="catalog-title">Каталог</h2>
           <p aria-live="polite"><span id="result-count">0</span> товаров найдено</p>
+          <button class="catalog-back-button" id="favorites-back" type="button" hidden>← Вернуться в каталог</button>
         </div>
         <div class="catalog-tools">
           <label>Сортировка
@@ -125,6 +127,7 @@
 
       <div class="catalog-layout">
         <aside class="filters" id="filters" aria-label="Фильтры каталога">
+          <button class="filter-reset-button" type="button" data-reset-filters>Очистить фильтры</button>
           <div class="filter-group">
             <h3>Категория</h3>
             <label><input type="radio" name="category" value="all" checked> Все <span data-count="all">0</span></label>
@@ -152,7 +155,6 @@
               <input id="price-range" type="range" min="0" max="100000" value="100000" step="500">
             </label>
           </div>
-          <button class="filter-reset-button" type="button" data-reset-filters>Очистить фильтры</button>
         </aside>
 
         <div>

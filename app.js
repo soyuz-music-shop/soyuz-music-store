@@ -244,6 +244,7 @@ function render() {
   el('#favorite-count').textContent = state.favorites.size;
   el('#cart-count').textContent = state.cart.length;
   el('#favorites-button').classList.toggle('selected', state.favoritesOnly);
+  el('#favorites-back').hidden = !state.favoritesOnly;
   renderNotifications();
 }
 
@@ -464,6 +465,12 @@ el('#favorites-button').addEventListener('click', () => {
   state.visibleCount = 48;
   render();
   el('#catalog').scrollIntoView();
+});
+el('#favorites-back').addEventListener('click', () => {
+  state.favoritesOnly = false;
+  state.visibleCount = 48;
+  render();
+  el('#catalog').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 el('#theme-toggle').addEventListener('click', () => {
   const nextTheme = currentTheme() === 'dark' ? 'light' : 'dark';
