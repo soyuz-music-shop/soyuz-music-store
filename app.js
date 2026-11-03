@@ -52,7 +52,7 @@ function productCard(product) {
   const cover = product.image
     ? `<img class="cover-image" src="${safe(product.image)}" alt="" loading="lazy" decoding="async">`
     : '';
-  const chip = product.format || product.detail || '';
+  const carrierLabel = { vinyl: 'LP', cd: 'CD', tape: 'MC', book: 'Книга', movie: 'Фильм' }[product.category] || product.format || product.detail || '';
   return `<article class="product-card" data-category="${safe(product.category)}" data-product="${safe(product.id)}" tabindex="0" aria-label="Подробнее: ${safe(product.artist)} — ${safe(product.title)}">
     <div class="cover ${product.image ? 'has-image' : ''}" style="--cover:${categoryColor[product.category]}" data-mark="${safe(product.artist)}">
       ${cover}
@@ -61,7 +61,7 @@ function productCard(product) {
     <div class="product-info">
       <div class="product-title-row"><h3>${safe(product.artist)}</h3><button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button></div>
       <p class="album">${safe(product.title)}</p>
-      <div class="chips"><span>${categoryName[product.category]}</span>${chip ? `<span>${safe(chip)}</span>` : ''}</div>
+      ${carrierLabel ? `<div class="chips"><span>${safe(carrierLabel)}</span></div>` : ''}
       <div class="price-row"><span class="price">${money(product.price)}</span><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
       <button class="buy-button" type="button" data-buy="${safe(product.id)}" ${available ? '' : 'disabled'}>${available ? 'В корзину' : 'Сообщить о поступлении'}</button>
     </div>
