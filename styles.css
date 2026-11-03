@@ -17,9 +17,6 @@ button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.demo-note { background: var(--ink); color: #d7d3ca; text-align: center; padding: 8px 20px; font-size: 12px; }
-.demo-note span { color: var(--gold-light); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-right: 8px; }
-
 .site-header { height: 108px; display: grid; grid-template-columns: auto auto minmax(260px, 1fr) auto auto; gap: 32px; align-items: center; padding: 0 5vw; background: rgba(255,254,250,.94); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(16px); }
 .brand img { width: 78px; height: 78px; object-fit: contain; display: block; }
 .main-nav { display: flex; align-items: center; gap: 10px; }
@@ -55,21 +52,23 @@ h1 em { color: var(--gold); font-style: normal; }
 .gold-orbit { position: absolute; width: 190px; height: 190px; border-radius: 50%; border: 2px solid rgba(178,132,34,.45); right: 5%; top: 5%; box-shadow: 0 0 0 28px rgba(178,132,34,.06), 0 0 0 56px rgba(178,132,34,.03); }
 
 .category-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 0 2vw 44px; }
-.category-card { min-height: 170px; border: 0; border-radius: 12px; color: white; padding: 28px; text-align: left; cursor: pointer; overflow: hidden; position: relative; background: #181714; box-shadow: var(--shadow); }
+#categories { scroll-margin-top: 128px; }
+.category-card { min-height: 170px; border: 0; border-radius: 12px; color: white; padding: 28px; text-align: left; cursor: pointer; overflow: hidden; position: relative; background: radial-gradient(circle at 80% 110%, #4b3515 0, #191713 48%, #0f0e0c 100%); box-shadow: var(--shadow); }
 .category-card span { position: relative; z-index: 2; font-size: 26px; font-weight: 800; }
 .category-card i { position: absolute; left: 28px; bottom: 24px; width: 42px; height: 42px; border-radius: 50%; background: var(--gold); display: grid; place-items: center; font-style: normal; z-index: 2; }
-.category-card::after { content: ""; position: absolute; width: 180px; height: 180px; border-radius: 50%; right: -35px; bottom: -60px; background: repeating-radial-gradient(circle, #111 0 5px, #444 6px 7px, #111 8px 12px); }
-.cd-card::after { background: conic-gradient(#f44, #ffca64, #5ee4ff, #926aff, #f44); }
-.tape-card::after { border-radius: 18px; height: 100px; bottom: 10px; background: linear-gradient(#777, #222); box-shadow: inset 0 0 0 12px #aaa; }
-.book-card::after { border-radius: 6px; height: 130px; transform: rotate(-12deg); background: linear-gradient(90deg, #c59e56, #f3dfb7 7%, #171613 8% 100%); }
+.category-card img { position: absolute; right: -2%; bottom: -12%; width: 66%; height: 125%; object-fit: contain; object-position: right bottom; z-index: 1; pointer-events: none; filter: drop-shadow(-12px 18px 22px rgba(0,0,0,.42)); }
+.cd-card img { width: 72%; right: -5%; }
+.tape-card img { width: 74%; right: -4%; bottom: -8%; }
+.book-card img { width: 72%; right: -3%; bottom: -8%; }
 .category-card:hover { transform: translateY(-4px); }
 
-.benefits { display: grid; grid-template-columns: .7fr repeat(4, 1fr); gap: 0; align-items: center; padding: 28px 5vw; background: var(--white); border-block: 1px solid var(--line); }
-.benefits > div:not(:first-child) { padding: 0 24px; border-left: 1px solid var(--line); }
-.benefits b, .benefits span { display: block; }
+.benefits { display: grid; grid-template-columns: repeat(4, 1fr); align-items: stretch; padding: 30px 5vw; background: var(--white); border-block: 1px solid var(--line); }
+.benefit-item { display: grid; grid-template-columns: 46px 1fr; gap: 14px; align-items: center; min-width: 0; padding: 4px 24px; }
+.benefit-item + .benefit-item { border-left: 1px solid var(--line); }
+.benefit-icon { width: 42px; height: 42px; border: 1.5px solid var(--ink); border-radius: 50%; display: grid !important; place-items: center; color: var(--gold) !important; font-size: 20px !important; font-weight: 800; margin: 0 !important; }
+.benefits b, .benefits .benefit-item div span { display: block; }
 .benefits b { font-size: 14px; }
-.benefits span { color: var(--muted); font-size: 12px; margin-top: 4px; }
-.ozon-word { color: #0666ed; font-size: 38px; font-weight: 800; letter-spacing: -.08em; }
+.benefits .benefit-item div span { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 4px; }
 
 .catalog-section { padding: 100px 4vw; }
 .catalog-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 30px; }
@@ -148,13 +147,11 @@ footer p:last-child { margin-left: auto; }
   .main-nav.open { display: flex; }
   .menu-toggle { display: block; border: 0; background: transparent; font-weight: 800; }
   .product-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .benefits { grid-template-columns: repeat(2, 1fr); gap: 18px; }
-  .ozon-word { grid-column: 1 / -1; }
-  .benefits > div:not(:first-child) { border-left: 0; padding: 0; }
+  .benefits { grid-template-columns: repeat(2, 1fr); gap: 20px 0; }
+  .benefit-item:nth-child(odd) { border-left: 0; }
 }
 
 @media (max-width: 780px) {
-  .demo-note { text-align: left; }
   .site-header { height: 78px; grid-template-columns: auto auto 1fr auto auto; }
   .brand img { width: 54px; height: 54px; }
   .main-nav { inset-block-start: 78px; flex-direction: column; align-items: stretch; }
@@ -167,6 +164,7 @@ footer p:last-child { margin-left: auto; }
   .category-strip { grid-template-columns: repeat(2,1fr); }
   .category-card { min-height: 150px; }
   .benefits { grid-template-columns: 1fr; }
+  .benefit-item, .benefit-item + .benefit-item { border-left: 0; }
   .catalog-heading { align-items: start; flex-direction: column; }
   .catalog-tools { width: 100%; }
   .catalog-tools label { flex: 1; }
@@ -190,6 +188,7 @@ footer p:last-child { margin-left: auto; }
   .hero-art { min-height: 320px; }
   .category-strip { grid-template-columns: 1fr; padding-inline: 12px; }
   .benefits { padding-inline: 24px; }
+  .benefit-item { padding-inline: 0; }
   .catalog-section { padding: 72px 14px; }
   .product-grid { grid-template-columns: 1fr; }
   .integration-callout { margin-inline: 14px; }

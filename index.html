@@ -12,10 +12,6 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="demo-note" role="status">
-    <span>Каталог от 03.11.2026</span> Товары и цены загружены из выгрузок Ozon Seller.
-  </div>
-
   <header class="site-header" id="top">
     <a class="brand" href="#top" aria-label="Союз Мьюзик — на главную">
       <img src="logo.png" alt="Союз Мьюзик" width="112" height="112">
@@ -50,8 +46,8 @@
         <a class="primary-button" href="#catalog">Перейти в каталог <span>↗</span></a>
         <div class="hero-points" aria-label="Преимущества магазина">
           <span>Оригинальная продукция</span>
-          <span>Оплата Ozon Pay</span>
-          <span>Доставка в ПВЗ Ozon</span>
+          <span>4 475 товаров</span>
+          <span>Редкие и коллекционные издания</span>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
@@ -61,19 +57,18 @@
       </div>
     </section>
 
-    <section class="category-strip" aria-label="Категории">
-      <button class="category-card vinyl-card" data-category-jump="vinyl"><span>Винил</span><i>→</i></button>
-      <button class="category-card cd-card" data-category-jump="cd"><span>CD</span><i>→</i></button>
-      <button class="category-card tape-card" data-category-jump="tape"><span>Кассеты</span><i>→</i></button>
-      <button class="category-card book-card" data-category-jump="book"><span>Книги</span><i>→</i></button>
+    <section class="category-strip" id="categories" aria-label="Категории">
+      <button class="category-card vinyl-card" data-category-jump="vinyl"><span>Винил</span><i>→</i><img src="category-vinyl.svg" alt=""></button>
+      <button class="category-card cd-card" data-category-jump="cd"><span>CD</span><i>→</i><img src="category-cd.svg" alt=""></button>
+      <button class="category-card tape-card" data-category-jump="tape"><span>Кассеты</span><i>→</i><img src="category-tape.svg" alt=""></button>
+      <button class="category-card book-card" data-category-jump="book"><span>Книги</span><i>→</i><img src="category-books.svg" alt=""></button>
     </section>
 
-    <section class="benefits" id="benefits" aria-label="Оплата и доставка">
-      <div class="ozon-word">ozon</div>
-      <div><b>Оплата через Ozon Pay</b><span>Картой, СБП или в рассрочку</span></div>
-      <div><b>Доставка через Ozon</b><span>В ближайший ПВЗ по всей России</span></div>
-      <div><b>Только оригиналы</b><span>Напрямую от правообладателей</span></div>
-      <div><b>Честная цена</b><span>Без комиссии маркетплейса</span></div>
+    <section class="benefits" id="benefits" aria-label="Преимущества магазина">
+      <div class="benefit-item"><span class="benefit-icon" aria-hidden="true">✓</span><div><b>Оригинальная продукция</b><span>Напрямую от Союз Мьюзик</span></div></div>
+      <div class="benefit-item"><span class="benefit-icon" aria-hidden="true">◉</span><div><b>Большой выбор</b><span>4 475 товаров в каталоге</span></div></div>
+      <div class="benefit-item"><span class="benefit-icon" aria-hidden="true">★</span><div><b>Коллекционные издания</b><span>Цветной винил и лимитированные тиражи</span></div></div>
+      <div class="benefit-item"><span class="benefit-icon" aria-hidden="true">→</span><div><b>Доставка по России</b><span>До ближайшего пункта выдачи Ozon</span></div></div>
     </section>
 
     <section class="catalog-section" id="catalog" aria-labelledby="catalog-title">
@@ -131,14 +126,6 @@
       </div>
     </section>
 
-    <section class="integration-callout">
-      <div>
-        <p class="eyebrow">4 475 товаров в каталоге</p>
-        <h2>Ассортимент из выгрузки Ozon</h2>
-      </div>
-      <p>Названия, цены и изображения загружены из Excel. После подключения Seller API каталог можно обновлять автоматически, а остатки — показывать в реальном времени.</p>
-      <a href="#top">Наверх ↑</a>
-    </section>
   </main>
 
   <footer>
