@@ -76,7 +76,8 @@ function openProduct(product) {
   const favorite = state.favorites.has(product.id);
   const images = (product.images?.length ? product.images : [product.image]).filter(Boolean);
   const specs = Object.entries(product.specs || {});
-  const description = safe(product.description || '').replace(/\n/g, '<br>');
+  const description = safe(String(product.description || '').replace(/\s+/g, ' ').trim());
+  const defaultTab = description ? 'description' : 'specs';
   el('#product-detail').innerHTML = `
     <div class="detail-gallery">
       ${images[0] ? `<img class="detail-main-image" id="detail-main-image" src="${safe(images[0])}" alt="${safe(product.title)}">` : '<div class="detail-image-placeholder">Нет изображения</div>'}
@@ -91,8 +92,16 @@ function openProduct(product) {
         <button class="buy-button" type="button" data-buy="${safe(product.id)}">В корзину</button>
         <button class="detail-favorite ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}">${favorite ? '♥ В избранном' : '♡ В избранное'}</button>
       </div>
-      ${description ? `<section class="detail-section"><h3>Описание</h3><p class="detail-description">${description}</p></section>` : ''}
-      ${specs.length ? `<section class="detail-section"><h3>Характеристики</h3><dl class="detail-specs">${specs.map(([label, value]) => `<div><dt>${safe(label)}</dt><dd>${safe(value)}</dd></div>`).join('')}</dl></section>` : ''}
+      <div class="detail-tabs" role="tablist" aria-label="Информация о товаре">
+        <button class="detail-tab ${defaultTab === 'description' ? 'active' : ''}" type="button" role="tab" aria-selected="${defaultTab === 'description'}" data-detail-tab="description" ${description ? '' : 'disabled'}>Описание</button>
+        <button class="detail-tab ${defaultTab === 'specs' ? 'active' : ''}" type="button" role="tab" aria-selected="${defaultTab === 'specs'}" data-detail-tab="specs" ${specs.length ? '' : 'disabled'}>Характеристики</button>
+      </div>
+      <section class="detail-tab-panel" data-detail-panel="description" role="tabpanel" ${defaultTab === 'description' ? '' : 'hidden'}>
+        ${description ? `<p class="detail-description">${description}</p>` : '<p class="detail-empty">Описание пока не добавлено.</p>'}
+      </section>
+      <section class="detail-tab-panel" data-detail-panel="specs" role="tabpanel" ${defaultTab === 'specs' ? '' : 'hidden'}>
+        ${specs.length ? `<dl class="detail-specs">${specs.map(([label, value]) => `<div><dt>${safe(label)}</dt><dd>${safe(value)}</dd></div>`).join('')}</dl>` : '<p class="detail-empty">Характеристики пока не добавлены.</p>'}
+      </section>
     </div>`;
   if (!el('#product-dialog').open) el('#product-dialog').showModal();
 }
@@ -127,6 +136,7 @@ document.addEventListener('click', event => {
   const buy = event.target.closest('[data-buy]');
   const jump = event.target.closest('[data-category-jump]');
   const detailImage = event.target.closest('[data-detail-image]');
+  const detailTab = event.target.closest('[data-detail-tab]');
   const card = event.target.closest('[data-product]');
   if (favorite) {
     const id = favorite.dataset.favorite;
@@ -156,6 +166,17 @@ document.addEventListener('click', event => {
   }
   if (detailImage) {
     el('#detail-main-image').src = detailImage.dataset.detailImage;
+    return;
+  }
+  if (detailTab && !detailTab.disabled) {
+    all('[data-detail-tab]').forEach(tab => {
+      const active = tab === detailTab;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+    });
+    all('[data-detail-panel]').forEach(panel => {
+      panel.hidden = panel.dataset.detailPanel !== detailTab.dataset.detailTab;
+    });
     return;
   }
   if (card) openProduct(products.find(item => item.id === card.dataset.product));
