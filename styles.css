@@ -157,6 +157,11 @@ footer p:last-child { margin-left: auto; }
 .detail-tab-panel { margin-top: 18px; max-height: 360px; overflow: auto; padding-right: 8px; }
 .detail-tab-panel[hidden] { display: none; }
 .detail-description { margin: 0; white-space: normal; color: #3e3c38; line-height: 1.65; }
+.detail-description + .tracklist-block { margin-top: 14px; }
+.tracklist-block { color: #3e3c38; line-height: 1.55; }
+.tracklist-block strong { display: block; margin-bottom: 6px; color: var(--ink); }
+.tracklist-lines { display: grid; gap: 4px; }
+.tracklist-lines > div { min-width: 0; }
 .detail-empty { color: var(--muted); }
 .detail-specs { margin: 0; }
 .detail-specs div { display: grid; grid-template-columns: minmax(130px, .8fr) minmax(0, 1.2fr); gap: 18px; padding: 10px 0; border-bottom: 1px solid var(--line); }

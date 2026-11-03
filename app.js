@@ -18,6 +18,34 @@ const money = (value) => new Intl.NumberFormat('ru-RU').format(value) + ' ₽';
 const safe = (value) => String(value ?? '').replace(/[&<>'"]/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
 }[char]));
+
+function descriptionHtml(value) {
+  const raw = String(value || '').trim();
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const heading = raw.match(/трек\s*-?\s*лист\s*:?\s*/i);
+  if (!heading) return `<p class="detail-description">${safe(text)}</p>`;
+
+  const intro = raw.slice(0, heading.index).replace(/\s+/g, ' ').trim();
+  const trackText = raw.slice(heading.index + heading[0].length).trim();
+  let tracks = trackText.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  if (tracks.length < 2) {
+    const markers = [...trackText.matchAll(/(?:^|\s)((?:[A-ZА-Я]\s*)?\d{1,3})[.)]\s*/gi)];
+    tracks = markers.map((marker, index) => {
+      const start = marker.index + marker[0].length;
+      const end = index + 1 < markers.length ? markers[index + 1].index : trackText.length;
+      const title = trackText.slice(start, end).trim();
+      return title ? `${marker[1]}. ${title}` : '';
+    }).filter(Boolean);
+  }
+  if (!tracks.length) return `<p class="detail-description">${safe(text)}</p>`;
+
+  return `${intro ? `<p class="detail-description">${safe(intro)}</p>` : ''}
+    <div class="tracklist-block">
+      <strong>Треклист</strong>
+      <div class="tracklist-lines">${tracks.map(track => `<div>${safe(track)}</div>`).join('')}</div>
+    </div>`;
+}
 const categoryName = { vinyl: 'Винил', cd: 'CD', tape: 'Кассета', book: 'Книга', movie: 'Фильм' };
 const categoryColor = {
   vinyl: 'linear-gradient(135deg,#111,#6b5018)',
@@ -41,7 +69,7 @@ function filteredProducts() {
     if (state.sort === 'price-asc') return a.price - b.price;
     if (state.sort === 'price-desc') return b.price - a.price;
     if (state.sort === 'title') return `${a.artist}${a.title}`.localeCompare(`${b.artist}${b.title}`, 'ru');
-    return (b.year || 0) - (a.year || 0);
+    return String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')) || (b.year || 0) - (a.year || 0);
   });
   return result;
 }
@@ -76,7 +104,7 @@ function openProduct(product) {
   const favorite = state.favorites.has(product.id);
   const images = (product.images?.length ? product.images : [product.image]).filter(Boolean);
   const specs = Object.entries(product.specs || {});
-  const description = safe(String(product.description || '').replace(/\s+/g, ' ').trim());
+  const description = descriptionHtml(product.description);
   const defaultTab = description ? 'description' : 'specs';
   el('#product-detail').innerHTML = `
     <div class="detail-gallery">
@@ -97,7 +125,7 @@ function openProduct(product) {
         <button class="detail-tab ${defaultTab === 'specs' ? 'active' : ''}" type="button" role="tab" aria-selected="${defaultTab === 'specs'}" data-detail-tab="specs" ${specs.length ? '' : 'disabled'}>Характеристики</button>
       </div>
       <section class="detail-tab-panel" data-detail-panel="description" role="tabpanel" ${defaultTab === 'description' ? '' : 'hidden'}>
-        ${description ? `<p class="detail-description">${description}</p>` : '<p class="detail-empty">Описание пока не добавлено.</p>'}
+        ${description || '<p class="detail-empty">Описание пока не добавлено.</p>'}
       </section>
       <section class="detail-tab-panel" data-detail-panel="specs" role="tabpanel" ${defaultTab === 'specs' ? '' : 'hidden'}>
         ${specs.length ? `<dl class="detail-specs">${specs.map(([label, value]) => `<div><dt>${safe(label)}</dt><dd>${safe(value)}</dd></div>`).join('')}</dl>` : '<p class="detail-empty">Характеристики пока не добавлены.</p>'}
