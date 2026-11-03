@@ -19,7 +19,7 @@
   const apiUrl = path => `${String(config.url).replace(/\/$/, '')}/auth/v1${path}`;
   const headers = token => ({
     apikey: config.anonKey,
-    Authorization: `Bearer ${token || config.anonKey}`,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     'Content-Type': 'application/json'
   });
   const normalizePhone = value => {
