@@ -166,6 +166,127 @@ def notify_waitlist(products_by_offer):
     print(f"Waitlist notifications sent: {sent} via {provider}; failed: {failed}")
 
 
+def newsletter_matches(product, scope, artist):
+    if product.get("badge") != "Новинка" or not product.get("available"):
+        return False
+    if scope == "artist":
+        return text(product.get("artist")).casefold() == text(artist).casefold()
+    edition = " ".join(
+        text(value) for key, value in (product.get("specs") or {}).items()
+        if "издани" in text(key).casefold()
+    ).casefold()
+    if scope == "import":
+        return "импорт" in edition
+    if scope == "russian":
+        return "россий" in edition
+    return True
+
+
+def notify_newsletter(products_by_offer):
+    email_ready = (RESEND_API_KEY and WAITLIST_FROM_EMAIL) or all(
+        (MAIL_SMTP_HOST, MAIL_SMTP_USERNAME, MAIL_SMTP_PASSWORD, MAIL_FROM_EMAIL)
+    )
+    if not all((SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)) or not email_ready:
+        print("Newsletter email is not configured; catalog sync will continue")
+        return
+
+    supabase_headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+    }
+    query = (
+        "/rest/v1/newsletter_preferences"
+        "?select=user_id,email,customer_name,scope,artist,created_at&enabled=eq.true"
+    )
+    try:
+        preferences = json_request(SUPABASE_URL + query, headers=supabase_headers) or []
+    except Exception as error:
+        print(f"Newsletter lookup failed; catalog sync will continue: {error}")
+        return
+
+    sent = 0
+    failed = 0
+    provider = "none"
+    for preference in preferences:
+        user_id = text(preference.get("user_id"))
+        subscribed_date = text(preference.get("created_at"))[:10]
+        scope = text(preference.get("scope")) or "all"
+        artist = text(preference.get("artist"))
+        try:
+            delivery_query = (
+                "/rest/v1/newsletter_deliveries?select=product_id&user_id=eq."
+                + urllib.parse.quote(user_id, safe="")
+            )
+            deliveries = json_request(SUPABASE_URL + delivery_query, headers=supabase_headers) or []
+            delivered_ids = {text(row.get("product_id")) for row in deliveries}
+            products = [
+                product for product in products_by_offer.values()
+                if text(product.get("id")) not in delivered_ids
+                and text(product.get("publishedAt")) >= subscribed_date
+                and newsletter_matches(product, scope, artist)
+            ]
+            products.sort(key=lambda product: text(product.get("publishedAt")), reverse=True)
+            products = products[:20]
+            if not products:
+                continue
+
+            customer_name = text(preference.get("customer_name")) or "Здравствуйте"
+            html_items = []
+            text_items = []
+            for product in products:
+                product_name = " — ".join(filter(None, [text(product.get("artist")), text(product.get("title"))]))
+                price = f"{number(product.get('price')):,}".replace(",", " ")
+                html_items.append(
+                    f"<li><strong>{html.escape(product_name)}</strong> — {price} ₽</li>"
+                )
+                text_items.append(f"• {product_name} — {price} ₽")
+            scope_labels = {
+                "all": "все новинки",
+                "import": "импортные издания",
+                "russian": "российские издания",
+                "artist": f"новинки артиста {artist}",
+            }
+            scope_label = scope_labels.get(scope, "выбранные новинки")
+            subject = "Новые поступления Союз Мьюзик"
+            html_body = (
+                f"<p>{html.escape(customer_name)}, у нас появились новые поступления "
+                f"по вашей подписке «{html.escape(scope_label)}»:</p>"
+                f"<ul>{''.join(html_items)}</ul>"
+                '<p><a href="https://varvara9911.github.io/soyuz-music-store/#catalog">'
+                "Открыть каталог</a></p>"
+                "<p>Настройки подписки можно изменить в личном кабинете.</p>"
+            )
+            text_body = (
+                f"{customer_name}, у нас появились новые поступления "
+                f"по вашей подписке «{scope_label}»:\n\n"
+                + "\n".join(text_items)
+                + "\n\nОткрыть каталог: https://varvara9911.github.io/soyuz-music-store/#catalog"
+                + "\n\nНастройки подписки можно изменить в личном кабинете."
+            )
+            provider = send_waitlist_email(preference.get("email"), subject, html_body, text_body)
+            now = datetime.now(timezone.utc).isoformat()
+            json_request(
+                f"{SUPABASE_URL}/rest/v1/newsletter_deliveries?on_conflict=user_id,product_id",
+                method="POST",
+                headers={**supabase_headers, "Prefer": "resolution=ignore-duplicates,return=minimal"},
+                payload=[
+                    {"user_id": user_id, "product_id": text(product.get("id")), "sent_at": now}
+                    for product in products
+                ],
+            )
+            json_request(
+                f"{SUPABASE_URL}/rest/v1/newsletter_preferences?user_id=eq.{urllib.parse.quote(user_id, safe='')}",
+                method="PATCH",
+                headers={**supabase_headers, "Prefer": "return=minimal"},
+                payload={"last_sent_at": now},
+            )
+            sent += 1
+        except Exception as error:
+            failed += 1
+            print(f"Newsletter email failed for user {user_id}: {error}")
+    print(f"Newsletter messages sent: {sent} via {provider}; failed: {failed}")
+
+
 def batches(values, size):
     for start in range(0, len(values), size):
         yield values[start:start + size]
@@ -468,6 +589,7 @@ def main():
         encoding="utf-8",
     )
     notify_waitlist(by_offer)
+    notify_newsletter(by_offer)
     print(
         f"Ozon sync: {len(info)} API products, {added} added, {changed} changed, "
         f"{len(products)} total at {datetime.now(timezone.utc).isoformat()}"

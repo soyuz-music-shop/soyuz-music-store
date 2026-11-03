@@ -46,6 +46,63 @@ grant usage, select on sequence public.waitlist_id_seq to authenticated;
 create index if not exists waitlist_product_id_idx on public.waitlist (product_id);
 create index if not exists waitlist_notified_at_idx on public.waitlist (notified_at);
 
+-- Добровольная подписка пользователя на анонсы новинок.
+-- Один пользователь выбирает один режим: все новинки, импортные,
+-- российские или новинки конкретного артиста.
+create table if not exists public.newsletter_preferences (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  customer_name text not null default '',
+  enabled boolean not null default false,
+  scope text not null default 'all'
+    check (scope in ('all', 'import', 'russian', 'artist')),
+  artist text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  last_sent_at timestamptz
+);
+
+alter table public.newsletter_preferences enable row level security;
+
+drop policy if exists "Users can read own newsletter preference" on public.newsletter_preferences;
+create policy "Users can read own newsletter preference"
+on public.newsletter_preferences for select
+to authenticated
+using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can add own newsletter preference" on public.newsletter_preferences;
+create policy "Users can add own newsletter preference"
+on public.newsletter_preferences for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update own newsletter preference" on public.newsletter_preferences;
+create policy "Users can update own newsletter preference"
+on public.newsletter_preferences for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can delete own newsletter preference" on public.newsletter_preferences;
+create policy "Users can delete own newsletter preference"
+on public.newsletter_preferences for delete
+to authenticated
+using ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on table public.newsletter_preferences to authenticated;
+
+-- Журнал уже отправленных карточек защищает от повторных писем.
+-- Он доступен только серверной роли, используемой в GitHub Actions.
+create table if not exists public.newsletter_deliveries (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  product_id text not null,
+  sent_at timestamptz not null default now(),
+  primary key (user_id, product_id)
+);
+
+alter table public.newsletter_deliveries enable row level security;
+create index if not exists newsletter_deliveries_sent_at_idx on public.newsletter_deliveries (sent_at);
+
 -- Безопасное самостоятельное удаление аккаунта. Связанные записи листа ожидания
 -- удаляются каскадно по внешнему ключу user_id.
 create or replace function public.delete_own_account()

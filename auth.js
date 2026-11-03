@@ -23,11 +23,19 @@
   const deleteButton = document.querySelector('#auth-delete');
   const waitlistList = document.querySelector('#auth-waitlist-list');
   const waitlistCount = document.querySelector('#auth-waitlist-count');
+  const newsletterForm = document.querySelector('#newsletter-form');
+  const newsletterEnabled = document.querySelector('#newsletter-enabled');
+  const newsletterOptions = document.querySelector('#newsletter-options');
+  const newsletterArtistField = document.querySelector('#newsletter-artist-field');
+  const newsletterArtist = document.querySelector('#newsletter-artist');
+  const newsletterArtists = document.querySelector('#newsletter-artists');
+  const newsletterMessage = document.querySelector('#newsletter-message');
   const storageKey = 'soyuz-auth-session';
   let mode = 'login';
   let session = null;
   let waitlistIds = new Set();
   let waitlistRows = [];
+  let newsletterArtistNames = [];
 
   const configured = () => Boolean(config.url && config.anonKey);
   const apiUrl = path => `${String(config.url).replace(/\/$/, '')}/auth/v1${path}`;
@@ -174,6 +182,63 @@
     dispatchWaitlistChange();
   }
 
+  function selectedNewsletterScope() {
+    return newsletterForm?.querySelector('input[name="newsletter-scope"]:checked')?.value || 'all';
+  }
+
+  function renderNewsletterControls() {
+    if (!newsletterForm) return;
+    const enabled = Boolean(newsletterEnabled.checked);
+    const artistScope = selectedNewsletterScope() === 'artist';
+    newsletterOptions.disabled = !enabled;
+    newsletterArtistField.hidden = !enabled || !artistScope;
+    newsletterArtist.required = enabled && artistScope;
+  }
+
+  async function loadNewsletterArtists() {
+    if (!newsletterArtists) return;
+    try {
+      const response = await fetch('products.json', { cache: 'no-store' });
+      if (!response.ok) return;
+      const products = await response.json();
+      const namesByKey = new Map();
+      products.forEach(product => {
+        const artist = String(product.artist || '').trim();
+        const key = artist.toLocaleLowerCase('ru');
+        if (artist && !namesByKey.has(key)) namesByKey.set(key, artist);
+      });
+      newsletterArtistNames = [...namesByKey.values()].sort((a, b) => a.localeCompare(b, ['ru', 'en'], { sensitivity: 'base' }));
+      newsletterArtists.replaceChildren(...newsletterArtistNames.map(artist => {
+        const option = document.createElement('option');
+        option.value = artist;
+        return option;
+      }));
+    } catch {
+      newsletterArtistNames = [];
+    }
+  }
+
+  async function loadNewsletterPreference() {
+    if (!newsletterForm) return;
+    newsletterEnabled.checked = false;
+    newsletterForm.querySelector('input[name="newsletter-scope"][value="all"]').checked = true;
+    newsletterArtist.value = '';
+    newsletterMessage.textContent = '';
+    renderNewsletterControls();
+    if (!configured() || !session?.access_token) return;
+    const response = await fetch(restUrl('/newsletter_preferences?select=enabled,scope,artist&limit=1'), {
+      headers: headers(session.access_token)
+    });
+    if (!response.ok) return;
+    const [preference] = await response.json();
+    if (!preference) return;
+    newsletterEnabled.checked = Boolean(preference.enabled);
+    const scope = ['all', 'import', 'russian', 'artist'].includes(preference.scope) ? preference.scope : 'all';
+    newsletterForm.querySelector(`input[name="newsletter-scope"][value="${scope}"]`).checked = true;
+    newsletterArtist.value = preference.artist || '';
+    renderNewsletterControls();
+  }
+
   async function addToWaitlist(product) {
     if (!session?.access_token) {
       window.location.href = 'account.html';
@@ -261,6 +326,7 @@
       renderSession();
       dispatchAuthChange();
       await loadWaitlist();
+      await loadNewsletterPreference();
       if (!isAccountPage && typeof dialog.close === 'function') dialog.close();
     } catch (error) {
       const replacements = {
@@ -291,12 +357,76 @@
       const remember = Boolean(localStorage.getItem(storageKey));
       saveSession(session, remember);
       renderSession();
+      await fetch(restUrl(`/newsletter_preferences?user_id=eq.${session.user.id}`), {
+        method: 'PATCH',
+        headers: { ...headers(session.access_token), Prefer: 'return=minimal' },
+        body: JSON.stringify({ email: contactEmail, customer_name: displayName, updated_at: new Date().toISOString() })
+      }).catch(() => {});
       profileMessage.textContent = 'Данные сохранены.';
       profileMessage.classList.add('success');
       dispatchAuthChange();
     } catch (error) {
       profileMessage.textContent = error.message;
       profileMessage.classList.remove('success');
+    }
+  });
+
+  newsletterEnabled?.addEventListener('change', renderNewsletterControls);
+  newsletterForm?.querySelectorAll('input[name="newsletter-scope"]').forEach(input => {
+    input.addEventListener('change', renderNewsletterControls);
+  });
+
+  newsletterForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!session?.access_token) return;
+    const enabled = newsletterEnabled.checked;
+    const scope = selectedNewsletterScope();
+    let artist = newsletterArtist.value.trim();
+    if (enabled && scope === 'artist') {
+      if (!artist) {
+        newsletterMessage.textContent = 'Выберите артиста.';
+        return;
+      }
+      const canonicalArtist = newsletterArtistNames.find(name => name.localeCompare(artist, ['ru', 'en'], { sensitivity: 'base' }) === 0);
+      if (canonicalArtist) artist = canonicalArtist;
+    } else {
+      artist = '';
+    }
+    const metadata = session.user?.user_metadata || {};
+    const email = String(metadata.contact_email || '').trim();
+    if (enabled && !email) {
+      newsletterMessage.textContent = 'Сначала укажите электронную почту в профиле.';
+      return;
+    }
+    const saveButton = newsletterForm.querySelector('button[type="submit"]');
+    saveButton.disabled = true;
+    newsletterMessage.textContent = 'Сохраняем…';
+    newsletterMessage.classList.remove('success');
+    try {
+      const response = await fetch(restUrl('/newsletter_preferences?on_conflict=user_id'), {
+        method: 'POST',
+        headers: { ...headers(session.access_token), Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({
+          user_id: session.user.id,
+          email,
+          customer_name: metadata.display_name || '',
+          enabled,
+          scope,
+          artist,
+          updated_at: new Date().toISOString()
+        })
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Не удалось сохранить подписку.');
+      }
+      newsletterArtist.value = artist;
+      newsletterMessage.textContent = enabled ? 'Подписка на новинки сохранена.' : 'Подписка отключена.';
+      newsletterMessage.classList.add('success');
+    } catch (error) {
+      newsletterMessage.textContent = error.message;
+    } finally {
+      saveButton.disabled = false;
     }
   });
 
@@ -312,11 +442,12 @@
     renderSession();
     dispatchAuthChange();
     dispatchWaitlistChange();
+    await loadNewsletterPreference();
   });
 
   deleteButton.addEventListener('click', async () => {
     if (!session?.access_token) return;
-    const confirmed = window.confirm('Удалить аккаунт навсегда? Данные профиля и лист ожидания будут удалены. Это действие нельзя отменить.');
+    const confirmed = window.confirm('Удалить аккаунт навсегда? Данные профиля, лист ожидания и подписка на новинки будут удалены. Это действие нельзя отменить.');
     if (!confirmed) return;
     deleteButton.disabled = true;
     profileMessage.textContent = 'Удаляем аккаунт…';
@@ -339,6 +470,7 @@
       renderSession();
       dispatchAuthChange();
       dispatchWaitlistChange();
+      await loadNewsletterPreference();
       if (!isAccountPage && typeof dialog.close === 'function') dialog.close();
     } catch (error) {
       profileMessage.textContent = error.message;
@@ -356,9 +488,11 @@
   };
 
   (async () => {
+    await loadNewsletterArtists();
     session = await refreshStoredSession(readSession());
     renderSession();
     dispatchAuthChange();
     await loadWaitlist();
+    await loadNewsletterPreference();
   })();
 })();
