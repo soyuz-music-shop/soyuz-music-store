@@ -100,9 +100,7 @@ def send_waitlist_email(recipient, subject, html_body, text_body):
     raise RuntimeError("Email provider is not configured")
 
 
-def notify_waitlist(restocked_ids, products_by_offer):
-    if not restocked_ids:
-        return
+def notify_waitlist(products_by_offer):
     email_ready = (RESEND_API_KEY and WAITLIST_FROM_EMAIL) or all(
         (MAIL_SMTP_HOST, MAIL_SMTP_USERNAME, MAIL_SMTP_PASSWORD, MAIL_FROM_EMAIL)
     )
@@ -113,10 +111,9 @@ def notify_waitlist(restocked_ids, products_by_offer):
         )
         return
 
-    encoded_ids = ",".join(urllib.parse.quote(str(item), safe="") for item in restocked_ids)
     query = (
         "/rest/v1/waitlist?select=id,email,customer_name,product_id,product_title"
-        f"&notified_at=is.null&product_id=in.({encoded_ids})"
+        "&notified_at=is.null"
     )
     supabase_headers = {
         "apikey": SUPABASE_SERVICE_ROLE_KEY,
@@ -134,6 +131,8 @@ def notify_waitlist(restocked_ids, products_by_offer):
     provider = "none"
     for row in rows:
         product = products_by_offer.get(str(row.get("product_id")), {})
+        if not product.get("available") or number(product.get("stock")) <= 0:
+            continue
         product_title = row.get("product_title") or "Товар из листа ожидания"
         customer_name = row.get("customer_name") or "Здравствуйте"
         price = f"{number(product.get('price')):,}".replace(",", " ")
@@ -442,7 +441,6 @@ def main():
 
     added = 0
     changed = 0
-    restocked = []
     for offer_id, item in info.items():
         existing = by_offer.get(offer_id, {})
         api_updated_at = text(item.get("updated_at"))
@@ -461,8 +459,6 @@ def main():
             added += 1
         elif updated != existing:
             changed += 1
-        if existing and existing.get("available") is False and updated.get("available") is True:
-            restocked.append(offer_id)
         by_offer[offer_id] = updated
 
     products = list(by_offer.values())
@@ -471,7 +467,7 @@ def main():
         json.dumps(products, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
-    notify_waitlist(restocked, by_offer)
+    notify_waitlist(by_offer)
     print(
         f"Ozon sync: {len(info)} API products, {added} added, {changed} changed, "
         f"{len(products)} total at {datetime.now(timezone.utc).isoformat()}"
