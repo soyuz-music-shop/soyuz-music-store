@@ -341,8 +341,19 @@ el('#sort-select').addEventListener('change', event => {
 });
 el('#search-form').addEventListener('submit', event => {
   event.preventDefault();
-  state.search = el('#header-search').value;
+  state.search = el('#header-search').value.trim();
+  state.category = 'all';
+  state.artist = '';
+  state.stockOnly = false;
+  state.maxPrice = Number(el('#price-range').max);
+  state.favoritesOnly = false;
   state.visibleCount = 48;
+  el('#artist-filter').value = '';
+  el('#stock-only').checked = false;
+  el('#price-range').value = state.maxPrice;
+  el('#price-output').textContent = money(state.maxPrice);
+  document.querySelector('input[name="category"][value="all"]').checked = true;
+  setArtistDropdown(false);
   render();
   el('#catalog').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
