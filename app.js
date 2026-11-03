@@ -2,6 +2,17 @@ let products = [];
 let artistNames = [];
 let waitlistRows = [];
 
+const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+const currentTheme = () => document.documentElement.dataset.theme || (themeMedia.matches ? 'dark' : 'light');
+
+function renderThemeToggle() {
+  const dark = currentTheme() === 'dark';
+  const button = document.querySelector('#theme-toggle');
+  button.setAttribute('aria-label', dark ? 'Включить светлую тему' : 'Включить тёмную тему');
+  button.title = dark ? 'Светлая тема' : 'Тёмная тема';
+  document.querySelector('#theme-color').content = dark ? '#11100e' : '#f6f3ed';
+}
+
 window.addEventListener('pageshow', () => {
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -163,7 +174,7 @@ function productCard(product) {
       ${title.details ? `<p class="album-details">${safe(title.details)}</p>` : '<p class="album-details empty" aria-hidden="true"></p>'}
       ${carrierLabel ? `<div class="chips"><span>${safe(carrierLabel)}</span></div>` : ''}
       <div class="price-row"><span class="price">${money(product.price)}</span><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
-      <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"`}>${available ? 'В корзину' : (waiting ? 'Вы в листе ожидания' : 'Сообщить о поступлении')}</button>
+      <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"${waiting ? ' data-waiting="true" aria-pressed="true"' : ''}`}>${available ? 'В корзину' : (waiting ? '✓ В листе ожидания' : 'Сообщить о поступлении')}</button>
     </div>
   </article>`;
 }
@@ -191,7 +202,7 @@ function openProduct(product) {
       <p class="detail-title">${safe(product.title)}</p>
       <div class="detail-price-row"><strong>${money(product.price)}</strong><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
       <div class="detail-actions">
-        <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"`}>${available ? 'В корзину' : (waiting ? 'Вы в листе ожидания' : 'Сообщить о поступлении')}</button>
+        <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"${waiting ? ' data-waiting="true" aria-pressed="true"' : ''}`}>${available ? 'В корзину' : (waiting ? '✓ В листе ожидания' : 'Сообщить о поступлении')}</button>
         <button class="detail-favorite ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}">${favorite ? '♥ В избранном' : '♡ В избранное'}</button>
       </div>
       <div class="detail-tabs" role="tablist" aria-label="Информация о товаре">
@@ -290,6 +301,10 @@ document.addEventListener('click', async event => {
   if (waitlist) {
     const product = products.find(item => item.id === waitlist.dataset.waitlist);
     if (!product) return;
+    if (window.SOYUZ_AUTH?.isWaiting(product.id)) {
+      toast('Вы уже в листе ожидания');
+      return;
+    }
     try {
       const added = await window.SOYUZ_AUTH?.addToWaitlist(product);
       if (added) {
@@ -434,6 +449,16 @@ el('#favorites-button').addEventListener('click', () => {
   render();
   el('#catalog').scrollIntoView();
 });
+el('#theme-toggle').addEventListener('click', () => {
+  const nextTheme = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = nextTheme;
+  localStorage.setItem('soyuz-theme', nextTheme);
+  renderThemeToggle();
+});
+themeMedia.addEventListener('change', () => {
+  if (!document.documentElement.dataset.theme) renderThemeToggle();
+});
+renderThemeToggle();
 el('#reset-filters').addEventListener('click', () => {
   const maxPrice = Number(el('#price-range').max);
   state.search = '';

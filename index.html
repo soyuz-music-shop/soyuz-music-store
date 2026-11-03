@@ -4,18 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#f6f3ed" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#11100e" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f6f3ed" id="theme-color">
   <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги с оплатой и доставкой через Ozon.">
   <title>Союз Мьюзик — музыка, которую хочется держать в руках</title>
+  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=21">
+  <link rel="apple-touch-icon" href="logo.png?v=21">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>if ('scrollRestoration' in history) history.scrollRestoration = 'manual';</script>
-  <link rel="stylesheet" href="styles.css?v=20">
-  <script src="auth-config.js?v=20"></script>
-  <script src="auth.js?v=20" defer></script>
-  <script src="app.js?v=20" defer></script>
+  <script>
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    const savedTheme = localStorage.getItem('soyuz-theme');
+    if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
+  </script>
+  <link rel="stylesheet" href="styles.css?v=21">
+  <script src="auth-config.js?v=21"></script>
+  <script src="auth.js?v=21" defer></script>
+  <script src="app.js?v=21" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -41,6 +46,10 @@
     <button class="icon-button" id="notification-button" type="button" aria-label="Открыть уведомления">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
       <span class="counter gold" id="notification-count" hidden>0</span>
+    </button>
+    <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Включить тёмную тему" title="Сменить тему">
+      <svg class="theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+      <svg class="theme-icon-moon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.5 14.4A8.5 8.5 0 0 1 9.6 3.5 8.5 8.5 0 1 0 20.5 14.4Z"/></svg>
     </button>
     <button class="icon-button" id="favorites-button" type="button" aria-label="Показать избранное">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
