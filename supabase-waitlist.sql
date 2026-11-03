@@ -42,6 +42,7 @@ with check ((select auth.uid()) = user_id);
 
 grant select, insert, update, delete on table public.waitlist to authenticated;
 grant usage, select on sequence public.waitlist_id_seq to authenticated;
+grant select, update on table public.waitlist to service_role;
 
 create index if not exists waitlist_product_id_idx on public.waitlist (product_id);
 create index if not exists waitlist_notified_at_idx on public.waitlist (notified_at);
@@ -90,6 +91,7 @@ to authenticated
 using ((select auth.uid()) = user_id);
 
 grant select, insert, update, delete on table public.newsletter_preferences to authenticated;
+grant select, insert, update on table public.newsletter_preferences to service_role;
 
 -- Журнал уже отправленных карточек защищает от повторных писем.
 -- Он доступен только серверной роли, используемой в GitHub Actions.
@@ -101,6 +103,7 @@ create table if not exists public.newsletter_deliveries (
 );
 
 alter table public.newsletter_deliveries enable row level security;
+grant select, insert on table public.newsletter_deliveries to service_role;
 create index if not exists newsletter_deliveries_sent_at_idx on public.newsletter_deliveries (sent_at);
 
 -- Безопасное самостоятельное удаление аккаунта. Связанные записи листа ожидания
