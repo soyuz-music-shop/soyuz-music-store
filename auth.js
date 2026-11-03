@@ -19,6 +19,8 @@
   const accountLabel = document.querySelector('#account-label');
   const accountButton = document.querySelector('#account-button');
   const deleteButton = document.querySelector('#auth-delete');
+  const waitlistList = document.querySelector('#auth-waitlist-list');
+  const waitlistCount = document.querySelector('#auth-waitlist-count');
   const storageKey = 'soyuz-auth-session';
   let mode = 'login';
   let session = null;
@@ -126,9 +128,33 @@
   }
 
   function dispatchWaitlistChange() {
+    renderWaitlist();
     window.dispatchEvent(new CustomEvent('soyuz-waitlist-change', {
       detail: { ids: [...waitlistIds], rows: waitlistRows.map(row => ({ ...row })) }
     }));
+  }
+
+  function renderWaitlist() {
+    waitlistCount.textContent = String(waitlistRows.length);
+    waitlistList.replaceChildren();
+    if (!waitlistRows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'auth-waitlist-empty';
+      empty.textContent = 'Список пока пуст. Добавьте отсутствующий товар кнопкой «Сообщить о поступлении».';
+      waitlistList.append(empty);
+      return;
+    }
+    waitlistRows.forEach(row => {
+      const item = document.createElement('article');
+      item.className = 'auth-waitlist-item';
+      const title = document.createElement('strong');
+      title.textContent = row.product_title || 'Товар';
+      const status = document.createElement('span');
+      status.className = row.notified_at ? 'ready' : '';
+      status.textContent = row.notified_at ? '✓ Товар появился — уведомление отправлено' : '✓ В листе ожидания';
+      item.append(title, status);
+      waitlistList.append(item);
+    });
   }
 
   async function loadWaitlist() {
@@ -199,6 +225,14 @@
     dialog.showModal();
   });
   document.querySelector('.auth-close').addEventListener('click', () => dialog.close());
+  document.querySelector('#auth-home').addEventListener('click', () => {
+    dialog.close();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  document.querySelector('#auth-home-public').addEventListener('click', () => {
+    dialog.close();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
   document.querySelectorAll('[data-auth-mode]').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.authMode)));
 
   form.addEventListener('submit', async event => {

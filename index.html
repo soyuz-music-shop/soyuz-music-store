@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#f6f3ed" id="theme-color">
   <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги с оплатой и доставкой через Ozon.">
   <title>Союз Мьюзик — музыка, которую хочется держать в руках</title>
-  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=22">
-  <link rel="apple-touch-icon" href="logo.png?v=22">
+  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=23">
+  <link rel="apple-touch-icon" href="logo.png?v=23">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,10 +17,10 @@
     const savedTheme = localStorage.getItem('soyuz-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
   </script>
-  <link rel="stylesheet" href="styles.css?v=22">
-  <script src="auth-config.js?v=22"></script>
-  <script src="auth.js?v=22" defer></script>
-  <script src="app.js?v=22" defer></script>
+  <link rel="stylesheet" href="styles.css?v=23">
+  <script src="auth-config.js?v=23"></script>
+  <script src="auth.js?v=23" defer></script>
+  <script src="app.js?v=23" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -47,8 +47,9 @@
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
       <span class="counter gold" id="notification-count" hidden>0</span>
     </button>
-    <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Включить тёмную тему" title="Сменить тему">
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Включить тёмную тему" aria-pressed="false" title="Сменить тему">
       <svg class="theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+      <span class="theme-toggle-track" aria-hidden="true"><span class="theme-toggle-thumb"></span></span>
       <svg class="theme-icon-moon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.5 14.4A8.5 8.5 0 0 1 9.6 3.5 8.5 8.5 0 1 0 20.5 14.4Z"/></svg>
     </button>
     <button class="icon-button" id="favorites-button" type="button" aria-label="Показать избранное">
@@ -91,7 +92,7 @@
     <section class="about" id="about" aria-labelledby="about-title">
       <div class="about-heading">
         <p class="eyebrow">О нас</p>
-        <h2 id="about-title">🖤 Привет! Мы — <span>SOYUZ MUSIC.</span></h2>
+        <h2 id="about-title">🖤 Привет!<br>Мы - <em>SOYUZ MUSIC.</em></h2>
       </div>
       <div class="about-copy">
         <p>Если коротко: мы любим музыку.</p>
@@ -151,7 +152,7 @@
               <input id="price-range" type="range" min="0" max="100000" value="100000" step="500">
             </label>
           </div>
-          <button class="text-button" id="reset-filters" type="button">Сбросить фильтры</button>
+          <button class="filter-reset-button" id="reset-filters" type="button">Очистить фильтры</button>
         </aside>
 
         <div>
@@ -200,6 +201,7 @@
       <label class="remember-row"><input id="auth-remember" type="checkbox"> Запомнить меня на этом устройстве</label>
       <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
       <button class="primary-button auth-submit" type="submit">Войти</button>
+      <button class="account-home-button auth-home-public" id="auth-home-public" type="button">← На главную</button>
     </form>
     <div class="auth-session" id="auth-session" hidden>
       <p>Вы вошли как <strong id="auth-user-name"></strong></p>
@@ -214,7 +216,19 @@
         <p class="auth-message" id="auth-profile-message" role="status" aria-live="polite"></p>
         <button class="primary-button auth-profile-save" type="submit">Сохранить данные</button>
       </form>
-      <button class="text-button" id="auth-logout" type="button">Выйти</button>
+      <section class="auth-waitlist" aria-labelledby="auth-waitlist-title">
+        <div class="auth-waitlist-head">
+          <h3 id="auth-waitlist-title">Мой лист ожидания</h3>
+          <span id="auth-waitlist-count">0</span>
+        </div>
+        <div class="auth-waitlist-list" id="auth-waitlist-list">
+          <p class="auth-waitlist-empty">Список пока пуст.</p>
+        </div>
+      </section>
+      <div class="account-panel-actions">
+        <button class="account-home-button" id="auth-home" type="button">← На главную</button>
+        <button class="account-logout-button" id="auth-logout" type="button">Выйти</button>
+      </div>
       <button class="danger-button" id="auth-delete" type="button">Удалить аккаунт</button>
     </div>
   </dialog>
@@ -227,6 +241,7 @@
     <div class="notification-list" id="notification-list">
       <p class="notification-empty">Новых уведомлений нет.</p>
     </div>
+    <button class="account-home-button notification-home" type="button">← На главную</button>
   </dialog>
 
   <dialog class="cart-dialog" id="cart-dialog">

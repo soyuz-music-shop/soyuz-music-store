@@ -9,6 +9,8 @@ function renderThemeToggle() {
   const dark = currentTheme() === 'dark';
   const button = document.querySelector('#theme-toggle');
   button.setAttribute('aria-label', dark ? 'Включить светлую тему' : 'Включить тёмную тему');
+  button.setAttribute('aria-pressed', String(dark));
+  button.dataset.theme = dark ? 'dark' : 'light';
   button.title = dark ? 'Светлая тема' : 'Тёмная тема';
   document.querySelector('#theme-color').content = dark ? '#11100e' : '#f6f3ed';
 }
@@ -514,6 +516,10 @@ el('#notification-button').addEventListener('click', async () => {
   }
 });
 el('.notification-close').addEventListener('click', () => el('#notification-dialog').close());
+el('.notification-home').addEventListener('click', () => {
+  el('#notification-dialog').close();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 el('.cart-dialog .close-button').addEventListener('click', () => el('#cart-dialog').close());
 el('.product-close').addEventListener('click', () => el('#product-dialog').close());
 el('#cart-items').addEventListener('click', event => {

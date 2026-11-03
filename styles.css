@@ -99,13 +99,12 @@ a { color: inherit; }
 .search-button:hover { filter: brightness(1.06); }
 .icon-button { width: 42px; height: 42px; padding: 8px; border: 0; background: transparent; position: relative; cursor: pointer; }
 .icon-button svg { width: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.theme-icon-moon { display: none; }
-:root[data-theme="dark"] .theme-icon-sun { display: none; }
-:root[data-theme="dark"] .theme-icon-moon { display: block; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .theme-icon-sun { display: none; }
-  :root:not([data-theme="light"]) .theme-icon-moon { display: block; }
-}
+.theme-toggle { width: 84px; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 5px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); cursor: pointer; }
+.theme-toggle > svg { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme-toggle-track { width: 30px; height: 18px; flex: 0 0 auto; padding: 2px; border-radius: 99px; background: var(--surface-soft); box-shadow: inset 0 0 0 1px var(--line); }
+.theme-toggle-thumb { display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); transform: translateX(0); transition: transform .2s ease; }
+.theme-toggle[data-theme="dark"] .theme-toggle-thumb { transform: translateX(12px); }
+.theme-toggle:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .account-button { width: auto; min-width: 42px; display: inline-flex; align-items: center; gap: 7px; }
 .account-button svg { width: 26px; }
 .account-label { max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 800; }
@@ -146,7 +145,7 @@ h1 em { color: var(--gold); font-style: normal; }
 .about { scroll-margin-top: 70px; display: grid; grid-template-columns: minmax(280px, .9fr) minmax(360px, 1.1fr); gap: clamp(40px, 7vw, 110px); padding: clamp(64px, 8vw, 118px) 7vw; background: var(--white); border-block: 1px solid var(--line); }
 .about-heading { align-self: start; position: sticky; top: 98px; }
 .about-heading h2 { margin: 12px 0 0; max-width: 620px; font-size: clamp(38px, 5vw, 72px); line-height: .98; letter-spacing: -.055em; }
-.about-heading h2 span { color: var(--gold); }
+.about-heading h2 em { color: var(--gold); font-style: normal; }
 .about-copy { max-width: 760px; font-size: clamp(17px, 1.35vw, 22px); line-height: 1.65; color: var(--body-text); }
 .about-copy p { margin: 0 0 24px; }
 .about-copy p:first-child { color: var(--ink); font-size: 1.15em; font-weight: 800; }
@@ -183,6 +182,8 @@ select { display: block; margin-top: 6px; min-width: 220px; padding: 12px 42px 1
 .range-label > span { display: flex; justify-content: space-between; color: var(--muted); }
 .range-label input { width: 100%; accent-color: var(--gold); margin-top: 14px; }
 .text-button { border: 0; background: none; color: var(--gold); font-weight: 800; padding: 0; cursor: pointer; }
+.filter-reset-button { width: 100%; border: 1px solid var(--gold); border-radius: 999px; padding: 11px 14px; background: transparent; color: var(--gold); font-weight: 800; cursor: pointer; }
+.filter-reset-button:hover { background: var(--gold); color: #fff; }
 .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
 .product-card { border: 1px solid var(--line); border-radius: 16px; background: var(--white); overflow: hidden; box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease; cursor: pointer; }
 .product-card:hover { transform: translateY(-4px); box-shadow: 0 22px 60px rgba(30,24,12,.13); }
@@ -230,7 +231,7 @@ footer p:last-child { margin-left: auto; }
 .admin-link { color: var(--gold); font-weight: 800; text-decoration: none; }
 .admin-link:hover { text-decoration: underline; }
 
-.auth-dialog { width: min(460px, calc(100% - 28px)); border: 0; border-radius: 24px; padding: 28px; background: var(--paper); color: var(--ink); box-shadow: 0 35px 100px rgba(0,0,0,.42); }
+.auth-dialog { width: min(460px, calc(100% - 28px)); max-height: 88vh; overflow-y: auto; border: 0; border-radius: 24px; padding: 28px; background: var(--paper); color: var(--ink); box-shadow: 0 35px 100px rgba(0,0,0,.42); }
 .auth-dialog::backdrop { background: rgba(12,11,9,.62); backdrop-filter: blur(6px); }
 .auth-close { float: right; }
 .auth-head { padding-right: 58px; }
@@ -247,12 +248,30 @@ footer p:last-child { margin-left: auto; }
 .auth-message { min-height: 20px; margin: 6px 0; color: #a74836; font-size: 12px; }
 .auth-message.success { color: var(--green); }
 .auth-submit { width: 100%; }
+.auth-home-public { width: 100%; margin-top: 10px; }
 .auth-session { clear: both; padding: 28px 0 8px; }
 .auth-profile { display: grid; gap: 12px; margin: 20px 0; }
 .auth-profile label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
 .auth-profile input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent); outline: 0; }
 .auth-profile-phone { margin: 0; color: var(--muted); font-size: 12px; }
 .auth-profile-save { width: 100%; }
+.auth-waitlist { margin: 26px 0 20px; padding-top: 22px; border-top: 1px solid var(--line); }
+.auth-waitlist-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.auth-waitlist-head h3 { margin: 0; font-size: 20px; }
+.auth-waitlist-head span { min-width: 28px; height: 28px; display: grid; place-items: center; border-radius: 99px; background: var(--surface-soft); color: var(--gold); font-size: 12px; font-weight: 800; }
+.auth-waitlist-list { display: grid; gap: 9px; max-height: 260px; overflow-y: auto; }
+.auth-waitlist-item { padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); }
+.auth-waitlist-item strong, .auth-waitlist-item span { display: block; }
+.auth-waitlist-item strong { font-size: 13px; line-height: 1.4; }
+.auth-waitlist-item span { margin-top: 6px; color: var(--green); font-size: 11px; font-weight: 800; }
+.auth-waitlist-item span.ready { color: var(--gold); }
+.auth-waitlist-empty { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.account-panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.account-home-button, .account-logout-button { border-radius: 999px; padding: 12px 16px; font-weight: 800; cursor: pointer; }
+.account-home-button { border: 1px solid var(--line); background: var(--white); color: var(--ink); }
+.account-home-button:hover { border-color: var(--gold); color: var(--gold); }
+.account-logout-button { border: 0; background: var(--gold); color: #fff; }
+.account-logout-button:hover { filter: brightness(1.08); }
 .danger-button { display: block; width: 100%; margin-top: 16px; border: 1px solid #a74836; border-radius: 999px; padding: 12px 18px; background: transparent; color: #c65b48; font-weight: 800; cursor: pointer; }
 .danger-button:hover { background: #a74836; color: white; }
 .notification-dialog { width: min(560px, calc(100% - 28px)); max-height: 82vh; border: 0; border-radius: 24px; padding: 28px; background: var(--paper); color: var(--ink); box-shadow: 0 35px 100px rgba(0,0,0,.42); }
@@ -262,6 +281,7 @@ footer p:last-child { margin-left: auto; }
 .notification-item { width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--white); color: var(--ink); text-align: left; cursor: pointer; }
 .notification-item strong { display: block; margin-bottom: 5px; }
 .notification-item span, .notification-empty { color: var(--muted); }
+.notification-home { width: 100%; margin-top: 18px; }
 
 @media (min-width: 1101px) {
   .hero { height: clamp(390px, calc(100svh - 250px), 500px); min-height: 0; padding-block: 28px 18px; }
@@ -368,6 +388,8 @@ footer p:last-child { margin-left: auto; }
   h1 { font-size: 40px; }
   .site-header { gap: 4px; }
   .icon-button { width: 38px; height: 38px; padding: 8px; }
+  .theme-toggle { width: 68px; gap: 4px; padding-inline: 2px; }
+  .theme-toggle > svg { width: 15px; height: 15px; }
   .account-button { min-width: 38px; }
   .hero { padding: 24px 22px 16px; }
   .hero-subtitle { margin: 16px 0 18px; }
