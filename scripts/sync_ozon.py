@@ -2,10 +2,12 @@ import html
 import json
 import os
 import re
+import smtplib
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone
+from email.message import EmailMessage
 from pathlib import Path
 
 
@@ -18,6 +20,11 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 WAITLIST_FROM_EMAIL = os.environ.get("WAITLIST_FROM_EMAIL", "")
+MAIL_SMTP_HOST = os.environ.get("MAIL_SMTP_HOST", "")
+MAIL_SMTP_PORT = int(os.environ.get("MAIL_SMTP_PORT", "465") or 465)
+MAIL_SMTP_USERNAME = os.environ.get("MAIL_SMTP_USERNAME", "")
+MAIL_SMTP_PASSWORD = os.environ.get("MAIL_SMTP_PASSWORD", "")
+MAIL_FROM_EMAIL = os.environ.get("MAIL_FROM_EMAIL", "")
 
 
 def post(path, payload):
@@ -56,13 +63,53 @@ def json_request(url, method="GET", payload=None, headers=None):
         raise RuntimeError(f"HTTP {error.code} for {url}: {body[:1000]}") from error
 
 
+def send_waitlist_email(recipient, subject, html_body, text_body):
+    if RESEND_API_KEY and WAITLIST_FROM_EMAIL:
+        json_request(
+            "https://api.resend.com/emails",
+            method="POST",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+            payload={
+                "from": WAITLIST_FROM_EMAIL,
+                "to": [recipient],
+                "subject": subject,
+                "html": html_body,
+                "text": text_body,
+            },
+        )
+        return "Resend"
+
+    if all((MAIL_SMTP_HOST, MAIL_SMTP_USERNAME, MAIL_SMTP_PASSWORD, MAIL_FROM_EMAIL)):
+        message = EmailMessage()
+        message["From"] = MAIL_FROM_EMAIL
+        message["To"] = recipient
+        message["Subject"] = subject
+        message.set_content(text_body)
+        message.add_alternative(html_body, subtype="html")
+        if MAIL_SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(MAIL_SMTP_HOST, MAIL_SMTP_PORT, timeout=60) as smtp:
+                smtp.login(MAIL_SMTP_USERNAME, MAIL_SMTP_PASSWORD)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(MAIL_SMTP_HOST, MAIL_SMTP_PORT, timeout=60) as smtp:
+                smtp.starttls()
+                smtp.login(MAIL_SMTP_USERNAME, MAIL_SMTP_PASSWORD)
+                smtp.send_message(message)
+        return "SMTP"
+
+    raise RuntimeError("Email provider is not configured")
+
+
 def notify_waitlist(restocked_ids, products_by_offer):
     if not restocked_ids:
         return
-    if not all((SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, WAITLIST_FROM_EMAIL)):
+    email_ready = (RESEND_API_KEY and WAITLIST_FROM_EMAIL) or all(
+        (MAIL_SMTP_HOST, MAIL_SMTP_USERNAME, MAIL_SMTP_PASSWORD, MAIL_FROM_EMAIL)
+    )
+    if not all((SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)) or not email_ready:
         print(
-            "Waitlist email is not configured: add SUPABASE_URL, "
-            "SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY and WAITLIST_FROM_EMAIL secrets"
+            "Waitlist email is not configured: add Supabase secrets and either "
+            "Resend or SMTP email secrets"
         )
         return
 
@@ -77,35 +124,41 @@ def notify_waitlist(restocked_ids, products_by_offer):
     }
     rows = json_request(SUPABASE_URL + query, headers=supabase_headers) or []
     sent = 0
+    failed = 0
+    provider = "none"
     for row in rows:
         product = products_by_offer.get(str(row.get("product_id")), {})
         product_title = row.get("product_title") or "Товар из листа ожидания"
         customer_name = row.get("customer_name") or "Здравствуйте"
-        json_request(
-            "https://api.resend.com/emails",
-            method="POST",
-            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
-            payload={
-                "from": WAITLIST_FROM_EMAIL,
-                "to": [row.get("email")],
-                "subject": f"{product_title} снова в наличии",
-                "html": (
-                    f"<p>{html.escape(customer_name)}, товар снова появился в наличии:</p>"
-                    f"<p><strong>{html.escape(product_title)}</strong></p>"
-                    f"<p>Цена: {number(product.get('price')):,} ₽</p>"
-                    '<p><a href="https://varvara9911.github.io/soyuz-music-store/">'
-                    "Открыть магазин</a></p>"
-                ).replace(",", " "),
-            },
+        price = f"{number(product.get('price')):,}".replace(",", " ")
+        subject = f"{product_title} снова в наличии"
+        html_body = (
+            f"<p>{html.escape(customer_name)}, товар снова появился в наличии:</p>"
+            f"<p><strong>{html.escape(product_title)}</strong></p>"
+            f"<p>Цена: {price} ₽</p>"
+            '<p><a href="https://varvara9911.github.io/soyuz-music-store/">'
+            "Открыть магазин</a></p>"
+            "<p>Вы получили письмо, потому что подписались на уведомление о поступлении.</p>"
         )
-        json_request(
-            f"{SUPABASE_URL}/rest/v1/waitlist?id=eq.{row['id']}",
-            method="PATCH",
-            headers={**supabase_headers, "Prefer": "return=minimal"},
-            payload={"notified_at": datetime.now(timezone.utc).isoformat()},
+        text_body = (
+            f"{customer_name}, товар снова появился в наличии:\n\n"
+            f"{product_title}\nЦена: {price} ₽\n\n"
+            "Открыть магазин: https://varvara9911.github.io/soyuz-music-store/\n\n"
+            "Вы получили письмо, потому что подписались на уведомление о поступлении."
         )
-        sent += 1
-    print(f"Waitlist notifications sent: {sent}")
+        try:
+            provider = send_waitlist_email(row.get("email"), subject, html_body, text_body)
+            json_request(
+                f"{SUPABASE_URL}/rest/v1/waitlist?id=eq.{row['id']}",
+                method="PATCH",
+                headers={**supabase_headers, "Prefer": "return=minimal"},
+                payload={"notified_at": datetime.now(timezone.utc).isoformat()},
+            )
+            sent += 1
+        except Exception as error:  # Keep the catalog sync running; retry this row next hour.
+            failed += 1
+            print(f"Waitlist email failed for row {row.get('id')}: {error}")
+    print(f"Waitlist notifications sent: {sent} via {provider}; failed: {failed}")
 
 
 def batches(values, size):

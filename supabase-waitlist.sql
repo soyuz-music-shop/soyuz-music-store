@@ -7,11 +7,13 @@ create table if not exists public.waitlist (
   email text not null,
   customer_name text not null default '',
   notified_at timestamptz,
+  read_at timestamptz,
   created_at timestamptz not null default now(),
   unique (user_id, product_id)
 );
 
 alter table public.waitlist enable row level security;
+alter table public.waitlist add column if not exists read_at timestamptz;
 
 drop policy if exists "Users can read own waitlist" on public.waitlist;
 create policy "Users can read own waitlist"
@@ -31,8 +33,31 @@ on public.waitlist for delete
 to authenticated
 using ((select auth.uid()) = user_id);
 
-grant select, insert, delete on table public.waitlist to authenticated;
+drop policy if exists "Users can update own waitlist" on public.waitlist;
+create policy "Users can update own waitlist"
+on public.waitlist for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on table public.waitlist to authenticated;
 grant usage, select on sequence public.waitlist_id_seq to authenticated;
 
 create index if not exists waitlist_product_id_idx on public.waitlist (product_id);
 create index if not exists waitlist_notified_at_idx on public.waitlist (notified_at);
+
+-- Безопасное самостоятельное удаление аккаунта. Связанные записи листа ожидания
+-- удаляются каскадно по внешнему ключу user_id.
+create or replace function public.delete_own_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  delete from auth.users where id = (select auth.uid());
+end;
+$$;
+
+revoke all on function public.delete_own_account() from public;
+grant execute on function public.delete_own_account() to authenticated;

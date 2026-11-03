@@ -1,5 +1,6 @@
 let products = [];
 let artistNames = [];
+let waitlistRows = [];
 
 window.addEventListener('pageshow', () => {
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -216,6 +217,29 @@ function render() {
   el('#favorite-count').textContent = state.favorites.size;
   el('#cart-count').textContent = state.cart.length;
   el('#favorites-button').classList.toggle('selected', state.favoritesOnly);
+  renderNotifications();
+}
+
+function availableNotifications() {
+  const productMap = new Map(products.map(product => [String(product.id), product]));
+  return waitlistRows
+    .map(row => ({ row, product: productMap.get(String(row.product_id)) }))
+    .filter(item => item.product?.available !== false);
+}
+
+function renderNotifications() {
+  const notifications = availableNotifications();
+  const unread = notifications.filter(item => !item.row.read_at);
+  const counter = el('#notification-count');
+  counter.textContent = unread.length;
+  counter.hidden = unread.length === 0;
+  el('#notification-list').innerHTML = notifications.length
+    ? notifications.map(({ row, product }) => `
+      <button class="notification-item" type="button" data-notification-product="${safe(product.id)}">
+        <strong>${safe(row.product_title || [product.artist, product.title].filter(Boolean).join(' — '))}</strong>
+        <span>Товар снова в наличии — открыть карточку</span>
+      </button>`).join('')
+    : '<p class="notification-empty">Новых уведомлений нет.</p>';
 }
 
 function persist() {
@@ -239,7 +263,13 @@ document.addEventListener('click', async event => {
   const jump = event.target.closest('[data-category-jump]');
   const detailImage = event.target.closest('[data-detail-image]');
   const detailTab = event.target.closest('[data-detail-tab]');
+  const notificationProduct = event.target.closest('[data-notification-product]');
   const card = event.target.closest('[data-product]');
+  if (notificationProduct) {
+    el('#notification-dialog').close();
+    openProduct(products.find(item => item.id === notificationProduct.dataset.notificationProduct));
+    return;
+  }
   if (favorite) {
     const id = favorite.dataset.favorite;
     state.favorites.has(id) ? state.favorites.delete(id) : state.favorites.add(id);
@@ -322,7 +352,11 @@ function resetCategoryToAll() {
 }
 
 window.addEventListener('soyuz-auth-change', resetCategoryToAll);
-window.addEventListener('soyuz-waitlist-change', () => { if (products.length) render(); });
+window.addEventListener('soyuz-waitlist-change', event => {
+  waitlistRows = event.detail?.rows || [];
+  if (products.length) render();
+  else renderNotifications();
+});
 el('#artist-filter').addEventListener('input', event => {
   state.artist = event.target.value;
   state.visibleCount = 48;
@@ -442,6 +476,19 @@ el('#cart-button').addEventListener('click', () => {
   renderCart();
   el('#cart-dialog').showModal();
 });
+el('#notification-button').addEventListener('click', async () => {
+  if (!window.SOYUZ_AUTH?.getSession()?.access_token) {
+    el('#account-button').click();
+    return;
+  }
+  renderNotifications();
+  el('#notification-dialog').showModal();
+  const unreadIds = availableNotifications().filter(item => !item.row.read_at).map(item => item.row.id);
+  if (unreadIds.length) {
+    try { await window.SOYUZ_AUTH.markNotificationsRead(unreadIds); } catch (error) { console.error(error); }
+  }
+});
+el('.notification-close').addEventListener('click', () => el('#notification-dialog').close());
 el('.cart-dialog .close-button').addEventListener('click', () => el('#cart-dialog').close());
 el('.product-close').addEventListener('click', () => el('#product-dialog').close());
 el('#cart-items').addEventListener('click', event => {

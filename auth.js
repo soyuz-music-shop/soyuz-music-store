@@ -18,10 +18,12 @@
   const profileMessage = document.querySelector('#auth-profile-message');
   const accountLabel = document.querySelector('#account-label');
   const accountButton = document.querySelector('#account-button');
+  const deleteButton = document.querySelector('#auth-delete');
   const storageKey = 'soyuz-auth-session';
   let mode = 'login';
   let session = null;
   let waitlistIds = new Set();
+  let waitlistRows = [];
 
   const configured = () => Boolean(config.url && config.anonKey);
   const apiUrl = path => `${String(config.url).replace(/\/$/, '')}/auth/v1${path}`;
@@ -124,21 +126,24 @@
   }
 
   function dispatchWaitlistChange() {
-    window.dispatchEvent(new CustomEvent('soyuz-waitlist-change', { detail: { ids: [...waitlistIds] } }));
+    window.dispatchEvent(new CustomEvent('soyuz-waitlist-change', {
+      detail: { ids: [...waitlistIds], rows: waitlistRows.map(row => ({ ...row })) }
+    }));
   }
 
   async function loadWaitlist() {
     waitlistIds = new Set();
+    waitlistRows = [];
     if (!configured() || !session?.access_token) {
       dispatchWaitlistChange();
       return;
     }
-    const response = await fetch(restUrl('/waitlist?select=product_id'), {
+    const response = await fetch(restUrl('/waitlist?select=id,product_id,product_title,notified_at,read_at,created_at&order=created_at.desc'), {
       headers: headers(session.access_token)
     });
     if (!response.ok) return;
-    const rows = await response.json();
-    waitlistIds = new Set(rows.map(row => String(row.product_id)));
+    waitlistRows = await response.json();
+    waitlistIds = new Set(waitlistRows.map(row => String(row.product_id)));
     dispatchWaitlistChange();
   }
 
@@ -172,9 +177,20 @@
       })
     });
     if (!response.ok) throw new Error('Не удалось добавить товар в лист ожидания. Попробуйте ещё раз.');
-    waitlistIds.add(String(product.id));
-    dispatchWaitlistChange();
+    await loadWaitlist();
     return true;
+  }
+
+  async function markNotificationsRead(ids) {
+    const rowIds = [...new Set((ids || []).map(Number).filter(Number.isFinite))];
+    if (!session?.access_token || !rowIds.length) return;
+    const response = await fetch(restUrl(`/waitlist?id=in.(${rowIds.join(',')})`), {
+      method: 'PATCH',
+      headers: { ...headers(session.access_token), Prefer: 'return=minimal' },
+      body: JSON.stringify({ read_at: new Date().toISOString() })
+    });
+    if (!response.ok) throw new Error('Не удалось отметить уведомления прочитанными.');
+    await loadWaitlist();
   }
 
   accountButton.addEventListener('click', () => {
@@ -263,6 +279,7 @@
     }
     session = null;
     waitlistIds = new Set();
+    waitlistRows = [];
     saveSession(null, false);
     setMode('login');
     renderSession();
@@ -270,10 +287,45 @@
     dispatchWaitlistChange();
   });
 
+  deleteButton.addEventListener('click', async () => {
+    if (!session?.access_token) return;
+    const confirmed = window.confirm('Удалить аккаунт навсегда? Данные профиля и лист ожидания будут удалены. Это действие нельзя отменить.');
+    if (!confirmed) return;
+    deleteButton.disabled = true;
+    profileMessage.textContent = 'Удаляем аккаунт…';
+    profileMessage.classList.remove('success');
+    try {
+      const response = await fetch(restUrl('/rpc/delete_own_account'), {
+        method: 'POST',
+        headers: headers(session.access_token),
+        body: '{}'
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Не удалось удалить аккаунт.');
+      }
+      session = null;
+      waitlistIds = new Set();
+      waitlistRows = [];
+      saveSession(null, false);
+      setMode('login');
+      renderSession();
+      dispatchAuthChange();
+      dispatchWaitlistChange();
+      dialog.close();
+    } catch (error) {
+      profileMessage.textContent = error.message;
+    } finally {
+      deleteButton.disabled = false;
+    }
+  });
+
   window.SOYUZ_AUTH = {
     addToWaitlist,
     isWaiting: productId => waitlistIds.has(String(productId)),
-    getSession: () => session
+    getSession: () => session,
+    getWaitlistRows: () => waitlistRows.map(row => ({ ...row })),
+    markNotificationsRead
   };
 
   (async () => {

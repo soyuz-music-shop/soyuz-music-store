@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script>if ('scrollRestoration' in history) history.scrollRestoration = 'manual';</script>
-  <link rel="stylesheet" href="styles.css?v=19">
-  <script src="auth-config.js?v=19"></script>
-  <script src="auth.js?v=19" defer></script>
-  <script src="app.js?v=19" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20">
+  <script src="auth-config.js?v=20"></script>
+  <script src="auth.js?v=20" defer></script>
+  <script src="app.js?v=20" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -37,6 +37,10 @@
     <button class="icon-button account-button" id="account-button" type="button" aria-label="Войти или зарегистрироваться">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m12-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
       <span class="account-label" id="account-label">Войти</span>
+    </button>
+    <button class="icon-button" id="notification-button" type="button" aria-label="Открыть уведомления">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+      <span class="counter gold" id="notification-count" hidden>0</span>
     </button>
     <button class="icon-button" id="favorites-button" type="button" aria-label="Показать избранное">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
@@ -195,6 +199,17 @@
         <button class="primary-button auth-profile-save" type="submit">Сохранить данные</button>
       </form>
       <button class="text-button" id="auth-logout" type="button">Выйти</button>
+      <button class="danger-button" id="auth-delete" type="button">Удалить аккаунт</button>
+    </div>
+  </dialog>
+
+  <dialog class="notification-dialog" id="notification-dialog">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Личный кабинет</p><h2>Уведомления</h2></div>
+      <button class="close-button notification-close" type="button" aria-label="Закрыть уведомления">×</button>
+    </div>
+    <div class="notification-list" id="notification-list">
+      <p class="notification-empty">Новых уведомлений нет.</p>
     </div>
   </dialog>
 

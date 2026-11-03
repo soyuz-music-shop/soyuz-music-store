@@ -23,10 +23,15 @@ jobs:
         env:
           OZON_CLIENT_ID: ${{ secrets.OZON_CLIENT_ID }}
           OZON_API_KEY: ${{ secrets.OZON_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: https://sprvfwqqqktrcmalzbcq.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           WAITLIST_FROM_EMAIL: ${{ secrets.WAITLIST_FROM_EMAIL }}
+          MAIL_SMTP_HOST: smtp.mail.ru
+          MAIL_SMTP_PORT: "465"
+          MAIL_SMTP_USERNAME: soyuz_music_shop@mail.ru
+          MAIL_SMTP_PASSWORD: ${{ secrets.MAIL_SMTP_PASSWORD }}
+          MAIL_FROM_EMAIL: "Союз Мьюзик <soyuz_music_shop@mail.ru>"
         run: python scripts/sync_ozon.py
 
       - name: Опубликовать изменения
