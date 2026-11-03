@@ -38,6 +38,17 @@ const state = {
 const el = (selector) => document.querySelector(selector);
 const all = (selector) => [...document.querySelectorAll(selector)];
 const money = (value) => new Intl.NumberFormat('ru-RU').format(value) + ' ₽';
+const NEW_PRODUCT_WINDOW_DAYS = 7;
+
+function isRecentlyPublished(value, windowDays = NEW_PRODUCT_WINDOW_DAYS) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return false;
+  const publishedDay = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const ageDays = Math.floor((today - publishedDay) / 86400000);
+  return ageDays >= 0 && ageDays <= windowDays;
+}
 const normalizeSearchText = value => String(value ?? '')
   .toLocaleLowerCase('ru')
   .replace(/ё/g, 'е')
@@ -166,10 +177,13 @@ function productCard(product) {
     : '';
   const carrierLabel = { vinyl: 'LP', cd: 'CD', tape: 'MC', book: 'Книга', movie: 'Фильм' }[product.category] || product.format || product.detail || '';
   const title = splitProductTitle(product.title);
+  const badge = product.badge && product.badge !== 'Новинка'
+    ? product.badge
+    : (isRecentlyPublished(product.publishedAt) ? 'Новинка' : '');
   return `<article class="product-card" data-category="${safe(product.category)}" data-product="${safe(product.id)}" tabindex="0" aria-label="Подробнее: ${safe(product.artist)} — ${safe(product.title)}">
     <div class="cover ${product.image ? 'has-image' : ''}" style="--cover:${categoryColor[product.category]}" data-mark="${safe(product.artist)}">
       ${cover}
-      ${product.badge ? `<span class="badge">${safe(product.badge)}</span>` : ''}
+      ${badge ? `<span class="badge">${safe(badge)}</span>` : ''}
     </div>
     <div class="product-info">
       <div class="product-title-row"><div class="product-title-copy"><h3>${safe(product.artist)}</h3>${title.main ? `<h4>${safe(title.main)}</h4>` : ''}</div><button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button></div>

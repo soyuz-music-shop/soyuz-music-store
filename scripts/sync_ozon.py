@@ -218,7 +218,7 @@ def publication_badge(created_at):
     except ValueError:
         return "", ""
     age_days = (date.today() - created).days
-    return created.isoformat(), "Новинка" if 0 <= age_days <= 30 else ""
+    return created.isoformat(), "Новинка" if 0 <= age_days <= 7 else ""
 
 
 def attribute_text(attribute):

@@ -130,10 +130,6 @@ h1 em { color: var(--gold); font-style: normal; }
 .category-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 0 2vw 28px; }
 #categories { scroll-margin-top: 128px; }
 .category-card { appearance: none; aspect-ratio: 2.45; min-height: 0; border: 0; outline: 0; border-radius: 12px; padding: 0; cursor: pointer; overflow: hidden; position: relative; background: #12110f; box-shadow: none; clip-path: inset(1px round 12px); }
-.category-card::before,
-.category-card::after { content: ""; position: absolute; z-index: 3; left: 0; right: 0; height: 2px; background: #12110f; pointer-events: none; }
-.category-card::before { top: 0; }
-.category-card::after { bottom: 0; }
 .category-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .category-card img { display: block; position: absolute; max-width: none; pointer-events: none; }
 .vinyl-card img { width: 411.12%; height: 509.78%; left: -8.34%; top: -336.79%; }
