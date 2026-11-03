@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги с оплатой и доставкой через Ozon.">
+  <title>Союз Мьюзик — музыка, которую хочется держать в руках</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="demo-note" role="status">
+    <span>Каталог от 03.11.2026</span> Товары и цены загружены из выгрузок Ozon Seller.
+  </div>
+
+  <header class="site-header" id="top">
+    <a class="brand" href="#top" aria-label="Союз Мьюзик — на главную">
+      <img src="logo.png" alt="Союз Мьюзик" width="112" height="112">
+    </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Меню</button>
+    <nav class="main-nav" id="main-nav" aria-label="Основная навигация">
+      <a class="active" href="#catalog">Каталог</a>
+      <a href="#new">Новинки</a>
+      <a href="#benefits">Преимущества</a>
+    </nav>
+    <label class="header-search">
+      <span class="sr-only">Поиск по каталогу</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+      <input id="header-search" type="search" placeholder="Поиск по каталогу…" autocomplete="off">
+    </label>
+    <button class="icon-button" id="favorites-button" type="button" aria-label="Показать избранное">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+      <span class="counter" id="favorite-count">0</span>
+    </button>
+    <button class="icon-button" id="cart-button" type="button" aria-label="Открыть корзину">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 3h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 7H6m4 13h.01M18 20h.01"/></svg>
+      <span class="counter gold" id="cart-count">0</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Официальный интернет-магазин</p>
+        <h1 id="hero-title">Музыка, которую<br><em>хочется держать</em><br>в руках</h1>
+        <p class="hero-subtitle">Винил · CD · Кассеты · Книги</p>
+        <a class="primary-button" href="#catalog">Перейти в каталог <span>↗</span></a>
+        <div class="hero-points" aria-label="Преимущества магазина">
+          <span>Оригинальная продукция</span>
+          <span>Оплата Ozon Pay</span>
+          <span>Доставка в ПВЗ Ozon</span>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="vinyl"><div class="vinyl-label"></div></div>
+        <div class="sleeve"><span>SOYUZ<br>MUSIC</span><small>selected records</small></div>
+        <div class="gold-orbit"></div>
+      </div>
+    </section>
+
+    <section class="category-strip" aria-label="Категории">
+      <button class="category-card vinyl-card" data-category-jump="vinyl"><span>Винил</span><i>→</i></button>
+      <button class="category-card cd-card" data-category-jump="cd"><span>CD</span><i>→</i></button>
+      <button class="category-card tape-card" data-category-jump="tape"><span>Кассеты</span><i>→</i></button>
+      <button class="category-card book-card" data-category-jump="book"><span>Книги</span><i>→</i></button>
+    </section>
+
+    <section class="benefits" id="benefits" aria-label="Оплата и доставка">
+      <div class="ozon-word">ozon</div>
+      <div><b>Оплата через Ozon Pay</b><span>Картой, СБП или в рассрочку</span></div>
+      <div><b>Доставка через Ozon</b><span>В ближайший ПВЗ по всей России</span></div>
+      <div><b>Только оригиналы</b><span>Напрямую от правообладателей</span></div>
+      <div><b>Честная цена</b><span>Без комиссии маркетплейса</span></div>
+    </section>
+
+    <section class="catalog-section" id="catalog" aria-labelledby="catalog-title">
+      <div class="catalog-heading">
+        <div>
+          <p class="eyebrow" id="new">В центре внимания</p>
+          <h2 id="catalog-title">Каталог</h2>
+          <p><span id="result-count">0</span> товаров найдено</p>
+        </div>
+        <div class="catalog-tools">
+          <label>Сортировка
+            <select id="sort-select">
+              <option value="new">Сначала новинки</option>
+              <option value="price-asc">Сначала дешевле</option>
+              <option value="price-desc">Сначала дороже</option>
+              <option value="title">По названию</option>
+            </select>
+          </label>
+          <button class="filter-toggle" id="filter-toggle" type="button">Фильтры</button>
+        </div>
+      </div>
+
+      <div class="catalog-layout">
+        <aside class="filters" id="filters" aria-label="Фильтры каталога">
+          <div class="filter-group">
+            <h3>Категория</h3>
+            <label><input type="radio" name="category" value="all" checked> Все <span data-count="all">0</span></label>
+            <label><input type="radio" name="category" value="vinyl"> Винил <span data-count="vinyl">0</span></label>
+            <label><input type="radio" name="category" value="cd"> CD <span data-count="cd">0</span></label>
+            <label><input type="radio" name="category" value="tape"> Кассеты <span data-count="tape">0</span></label>
+            <label><input type="radio" name="category" value="book"> Книги <span data-count="book">0</span></label>
+            <label><input type="radio" name="category" value="movie"> Фильмы <span data-count="movie">0</span></label>
+          </div>
+          <div class="filter-group">
+            <h3>Наличие</h3>
+            <label><input id="stock-only" type="checkbox"> Только в наличии</label>
+          </div>
+          <div class="filter-group">
+            <h3>Цена</h3>
+            <label class="range-label"><span>до <output id="price-output">100 000 ₽</output></span>
+              <input id="price-range" type="range" min="0" max="100000" value="100000" step="500">
+            </label>
+          </div>
+          <button class="text-button" id="reset-filters" type="button">Сбросить фильтры</button>
+        </aside>
+
+        <div>
+          <div class="product-grid" id="product-grid" aria-live="polite"><p class="loading">Загружаем каталог…</p></div>
+          <button class="load-more" id="load-more" type="button" hidden>Показать ещё</button>
+          <div class="empty-state" id="empty-state" hidden>
+            <h3>Ничего не нашли</h3>
+            <p>Попробуйте изменить запрос или сбросить фильтры.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="integration-callout">
+      <div>
+        <p class="eyebrow">4 475 товаров в каталоге</p>
+        <h2>Ассортимент из выгрузки Ozon</h2>
+      </div>
+      <p>Названия, цены и изображения загружены из Excel. После подключения Seller API каталог можно обновлять автоматически, а остатки — показывать в реальном времени.</p>
+      <a href="#top">Наверх ↑</a>
+    </section>
+  </main>
+
+  <footer>
+    <img src="logo.png" alt="" width="72" height="72">
+    <p>© <span id="year"></span> Союз Мьюзик.</p>
+    <p>Оплата и доставка — через Ozon</p>
+  </footer>
+
+  <dialog class="cart-dialog" id="cart-dialog">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Ваш заказ</p><h2>Корзина</h2></div>
+      <button class="close-button" type="button" aria-label="Закрыть корзину">×</button>
+    </div>
+    <div id="cart-items"></div>
+    <div class="cart-total"><span>Итого</span><strong id="cart-total">0 ₽</strong></div>
+    <button class="primary-button checkout-button" type="button">Перейти к оплате Ozon Pay</button>
+    <p class="dialog-note">В демо-версии платёжный токен ещё не подключён.</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
