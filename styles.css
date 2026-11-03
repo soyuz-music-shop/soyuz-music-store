@@ -159,8 +159,6 @@ h1 em { color: var(--gold); font-style: normal; }
 .catalog-tools label { color: var(--muted); font-size: 12px; }
 select { display: block; margin-top: 6px; min-width: 220px; padding: 12px 42px 12px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--ink); }
 .filter-toggle { display: none; border: 1px solid var(--line); padding: 12px 18px; border-radius: 999px; background: var(--white); }
-.catalog-reset-button { border: 1px solid var(--gold); border-radius: 999px; padding: 12px 16px; background: transparent; color: var(--gold); font-weight: 800; white-space: nowrap; cursor: pointer; }
-.catalog-reset-button:hover { background: var(--gold); color: #fff; }
 .catalog-layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
 .filters { align-self: start; position: sticky; top: 86px; max-height: calc(100svh - 102px); overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel-translucent); box-shadow: var(--shadow); }
 .filters::-webkit-scrollbar { width: 8px; }
@@ -387,7 +385,6 @@ footer p:last-child { margin-left: auto; }
   .catalog-heading { align-items: start; flex-direction: column; }
   .catalog-tools { width: 100%; }
   .catalog-tools label { flex: 1; }
-  .catalog-reset-button { width: 100%; }
   select { min-width: 0; width: 100%; }
   .filter-toggle { display: block; }
   .catalog-layout { grid-template-columns: 1fr; }
