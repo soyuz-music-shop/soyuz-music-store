@@ -237,6 +237,8 @@ footer p:last-child { margin-left: auto; }
 .auth-head { padding-right: 58px; }
 .auth-head h2 { margin: 0; font-size: 42px; letter-spacing: -.05em; }
 .auth-head > p:last-child { color: var(--muted); }
+.account-panel-heading { padding-right: 58px; }
+.account-panel-heading h2 { margin: 0 0 20px; font-size: 36px; letter-spacing: -.045em; }
 .auth-tabs { clear: both; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 24px 0 18px; padding: 5px; border-radius: 14px; background: var(--surface-soft); }
 .auth-tab { border: 0; border-radius: 10px; padding: 12px; background: transparent; color: var(--muted); font-weight: 800; cursor: pointer; }
 .auth-tab.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow); }
@@ -249,7 +251,7 @@ footer p:last-child { margin-left: auto; }
 .auth-message.success { color: var(--green); }
 .auth-submit { width: 100%; }
 .auth-home-public { width: 100%; margin-top: 10px; }
-.auth-session { clear: both; padding: 28px 0 8px; }
+.auth-session { clear: both; padding: 0 0 8px; }
 .auth-profile { display: grid; gap: 12px; margin: 20px 0; }
 .auth-profile label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
 .auth-profile input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent); outline: 0; }

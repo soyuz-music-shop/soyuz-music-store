@@ -2,6 +2,7 @@
   const config = window.SOYUZ_AUTH_CONFIG || {};
   const dialog = document.querySelector('#auth-dialog');
   const form = document.querySelector('#auth-form');
+  const entryPanel = document.querySelector('#auth-entry');
   const nameInput = document.querySelector('#auth-name');
   const emailInput = document.querySelector('#auth-email');
   const phoneInput = document.querySelector('#auth-phone');
@@ -66,8 +67,7 @@
     const name = session?.user?.user_metadata?.display_name || '';
     const email = session?.user?.user_metadata?.contact_email || '';
     const signedIn = Boolean(session?.access_token && phone);
-    form.hidden = signedIn;
-    document.querySelector('.auth-tabs').hidden = signedIn;
+    entryPanel.hidden = signedIn;
     sessionPanel.hidden = !signedIn;
     sessionName.textContent = name || phone;
     sessionPhone.textContent = phone;

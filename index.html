@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#f6f3ed" id="theme-color">
   <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги с оплатой и доставкой через Ozon.">
   <title>Союз Мьюзик — музыка, которую хочется держать в руках</title>
-  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=23">
-  <link rel="apple-touch-icon" href="logo.png?v=23">
+  <link rel="icon" type="image/png" sizes="600x600" href="logo.png?v=24">
+  <link rel="apple-touch-icon" href="logo.png?v=24">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,10 +17,10 @@
     const savedTheme = localStorage.getItem('soyuz-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
   </script>
-  <link rel="stylesheet" href="styles.css?v=23">
-  <script src="auth-config.js?v=23"></script>
-  <script src="auth.js?v=23" defer></script>
-  <script src="app.js?v=23" defer></script>
+  <link rel="stylesheet" href="styles.css?v=24">
+  <script src="auth-config.js?v=24"></script>
+  <script src="auth.js?v=24" defer></script>
+  <script src="app.js?v=24" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -175,17 +175,18 @@
   </footer>
 
   <dialog class="auth-dialog" id="auth-dialog">
-    <button class="close-button auth-close" type="button" aria-label="Закрыть окно входа">×</button>
-    <div class="auth-head">
-      <p class="eyebrow">Личный кабинет</p>
-      <h2 id="auth-title">Вход</h2>
-      <p id="auth-subtitle">Войдите по номеру телефона и паролю.</p>
-    </div>
-    <div class="auth-tabs" role="tablist" aria-label="Вход или регистрация">
-      <button class="auth-tab active" type="button" data-auth-mode="login" role="tab" aria-selected="true">Войти</button>
-      <button class="auth-tab" type="button" data-auth-mode="register" role="tab" aria-selected="false">Регистрация</button>
-    </div>
-    <form id="auth-form">
+    <button class="close-button auth-close" type="button" aria-label="Закрыть личный кабинет">×</button>
+    <section class="auth-entry" id="auth-entry">
+      <div class="auth-head">
+        <p class="eyebrow">Личный кабинет</p>
+        <h2 id="auth-title">Вход</h2>
+        <p id="auth-subtitle">Войдите по номеру телефона и паролю.</p>
+      </div>
+      <div class="auth-tabs" role="tablist" aria-label="Вход или регистрация">
+        <button class="auth-tab active" type="button" data-auth-mode="login" role="tab" aria-selected="true">Войти</button>
+        <button class="auth-tab" type="button" data-auth-mode="register" role="tab" aria-selected="false">Регистрация</button>
+      </div>
+      <form id="auth-form">
       <label class="auth-register-field" hidden>Имя
         <input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Как к вам обращаться">
       </label>
@@ -202,8 +203,13 @@
       <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
       <button class="primary-button auth-submit" type="submit">Войти</button>
       <button class="account-home-button auth-home-public" id="auth-home-public" type="button">← На главную</button>
-    </form>
+      </form>
+    </section>
     <div class="auth-session" id="auth-session" hidden>
+      <div class="account-panel-heading">
+        <p class="eyebrow">Личный кабинет</p>
+        <h2>Мои данные</h2>
+      </div>
       <p>Вы вошли как <strong id="auth-user-name"></strong></p>
       <form class="auth-profile" id="auth-profile-form">
         <label>Имя
