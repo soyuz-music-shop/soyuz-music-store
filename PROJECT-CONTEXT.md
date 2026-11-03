@@ -41,6 +41,7 @@
 - `scripts/sync_ozon.py` — почасовое обновление дат публикации и остатков через Ozon Seller API.
 - `.github/workflows/import-excel.yml` — автоматический импорт загруженных Excel-файлов.
 - `.github/workflows/sync-ozon.yml` — почасовая синхронизация Ozon.
+- `.github/workflows/send-notifications.yml` — отдельная почасовая проверка писем листа ожидания и подписок, не зависящая от длительности синхронизации Ozon.
 
 ## Каталог
 

@@ -1,0 +1,32 @@
+name: Отправить уведомления покупателям
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/refresh-notifications"
+  schedule:
+    - cron: "47 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачать сайт
+        uses: actions/checkout@v5
+
+      - name: Проверить лист ожидания и подписки на новинки
+        env:
+          SUPABASE_URL: https://sprvfwqqqktrcmalzbcq.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          WAITLIST_FROM_EMAIL: ${{ secrets.WAITLIST_FROM_EMAIL }}
+          MAIL_SMTP_HOST: smtp.mail.ru
+          MAIL_SMTP_PORT: "465"
+          MAIL_SMTP_USERNAME: soyuz_music_shop@mail.ru
+          MAIL_SMTP_PASSWORD: ${{ secrets.MAIL_SMTP_PASSWORD }}
+          MAIL_FROM_EMAIL: "Союз Мьюзик <soyuz_music_shop@mail.ru>"
+        run: python scripts/send_notifications.py
