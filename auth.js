@@ -235,6 +235,7 @@
       renderSession();
       dispatchAuthChange();
       await loadWaitlist();
+      dialog.close();
     } catch (error) {
       const replacements = {
         'Invalid login credentials': 'Неверный номер телефона или пароль.',
