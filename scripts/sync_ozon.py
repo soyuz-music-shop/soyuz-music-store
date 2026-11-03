@@ -3,6 +3,7 @@ import json
 import os
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -13,6 +14,10 @@ CATALOG = ROOT / "products.json"
 API_ROOT = "https://api-seller.ozon.ru"
 CLIENT_ID = os.environ.get("OZON_CLIENT_ID", "")
 API_KEY = os.environ.get("OZON_API_KEY", "")
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+WAITLIST_FROM_EMAIL = os.environ.get("WAITLIST_FROM_EMAIL", "")
 
 
 def post(path, payload):
@@ -32,6 +37,75 @@ def post(path, payload):
     except urllib.error.HTTPError as error:
         body = error.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"Ozon API {path}: HTTP {error.code}: {body[:1000]}") from error
+
+
+def json_request(url, method="GET", payload=None, headers=None):
+    data = None if payload is None else json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={"Content-Type": "application/json", **(headers or {})},
+        method=method,
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            body = response.read().decode("utf-8")
+            return json.loads(body) if body else None
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {error.code} for {url}: {body[:1000]}") from error
+
+
+def notify_waitlist(restocked_ids, products_by_offer):
+    if not restocked_ids:
+        return
+    if not all((SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, WAITLIST_FROM_EMAIL)):
+        print(
+            "Waitlist email is not configured: add SUPABASE_URL, "
+            "SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY and WAITLIST_FROM_EMAIL secrets"
+        )
+        return
+
+    encoded_ids = ",".join(urllib.parse.quote(str(item), safe="") for item in restocked_ids)
+    query = (
+        "/rest/v1/waitlist?select=id,email,customer_name,product_id,product_title"
+        f"&notified_at=is.null&product_id=in.({encoded_ids})"
+    )
+    supabase_headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+    }
+    rows = json_request(SUPABASE_URL + query, headers=supabase_headers) or []
+    sent = 0
+    for row in rows:
+        product = products_by_offer.get(str(row.get("product_id")), {})
+        product_title = row.get("product_title") or "Товар из листа ожидания"
+        customer_name = row.get("customer_name") or "Здравствуйте"
+        json_request(
+            "https://api.resend.com/emails",
+            method="POST",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+            payload={
+                "from": WAITLIST_FROM_EMAIL,
+                "to": [row.get("email")],
+                "subject": f"{product_title} снова в наличии",
+                "html": (
+                    f"<p>{html.escape(customer_name)}, товар снова появился в наличии:</p>"
+                    f"<p><strong>{html.escape(product_title)}</strong></p>"
+                    f"<p>Цена: {number(product.get('price')):,} ₽</p>"
+                    '<p><a href="https://varvara9911.github.io/soyuz-music-store/">'
+                    "Открыть магазин</a></p>"
+                ).replace(",", " "),
+            },
+        )
+        json_request(
+            f"{SUPABASE_URL}/rest/v1/waitlist?id=eq.{row['id']}",
+            method="PATCH",
+            headers={**supabase_headers, "Prefer": "return=minimal"},
+            payload={"notified_at": datetime.now(timezone.utc).isoformat()},
+        )
+        sent += 1
+    print(f"Waitlist notifications sent: {sent}")
 
 
 def batches(values, size):
@@ -309,6 +383,7 @@ def main():
 
     added = 0
     changed = 0
+    restocked = []
     for offer_id, item in info.items():
         existing = by_offer.get(offer_id, {})
         api_updated_at = text(item.get("updated_at"))
@@ -327,6 +402,8 @@ def main():
             added += 1
         elif updated != existing:
             changed += 1
+        if existing and existing.get("available") is False and updated.get("available") is True:
+            restocked.append(offer_id)
         by_offer[offer_id] = updated
 
     products = list(by_offer.values())
@@ -335,6 +412,7 @@ def main():
         json.dumps(products, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
+    notify_waitlist(restocked, by_offer)
     print(
         f"Ozon sync: {len(info)} API products, {added} added, {changed} changed, "
         f"{len(products)} total at {datetime.now(timezone.utc).isoformat()}"

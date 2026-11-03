@@ -4,6 +4,7 @@ let artistNames = [];
 window.addEventListener('pageshow', () => {
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  resetCategoryToAll();
   requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
 });
 
@@ -145,6 +146,7 @@ function filteredProducts() {
 function productCard(product) {
   const favorite = state.favorites.has(product.id);
   const available = product.available !== false;
+  const waiting = window.SOYUZ_AUTH?.isWaiting(product.id) || false;
   const cover = product.image
     ? `<img class="cover-image" src="${safe(product.image)}" alt="" loading="lazy" decoding="async">`
     : '';
@@ -160,7 +162,7 @@ function productCard(product) {
       ${title.details ? `<p class="album-details">${safe(title.details)}</p>` : '<p class="album-details empty" aria-hidden="true"></p>'}
       ${carrierLabel ? `<div class="chips"><span>${safe(carrierLabel)}</span></div>` : ''}
       <div class="price-row"><span class="price">${money(product.price)}</span><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
-      <button class="buy-button" type="button" data-buy="${safe(product.id)}" ${available ? '' : 'disabled'}>${available ? 'В корзину' : 'Сообщить о поступлении'}</button>
+      <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"`}>${available ? 'В корзину' : (waiting ? 'Вы в листе ожидания' : 'Сообщить о поступлении')}</button>
     </div>
   </article>`;
 }
@@ -171,6 +173,8 @@ function openProduct(product) {
   if (!product) return;
   openProductId = product.id;
   const favorite = state.favorites.has(product.id);
+  const available = product.available !== false;
+  const waiting = window.SOYUZ_AUTH?.isWaiting(product.id) || false;
   const images = (product.images?.length ? product.images : [product.image]).filter(Boolean);
   const specs = Object.entries(product.specs || {});
   const description = descriptionHtml(product.description);
@@ -184,9 +188,9 @@ function openProduct(product) {
       <p class="eyebrow">${safe(categoryName[product.category] || 'Товар')}</p>
       <h2>${safe(product.artist)}</h2>
       <p class="detail-title">${safe(product.title)}</p>
-      <div class="detail-price-row"><strong>${money(product.price)}</strong><span class="stock">✓ В продаже</span></div>
+      <div class="detail-price-row"><strong>${money(product.price)}</strong><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
       <div class="detail-actions">
-        <button class="buy-button" type="button" data-buy="${safe(product.id)}">В корзину</button>
+        <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"`}>${available ? 'В корзину' : (waiting ? 'Вы в листе ожидания' : 'Сообщить о поступлении')}</button>
         <button class="detail-favorite ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}">${favorite ? '♥ В избранном' : '♡ В избранное'}</button>
       </div>
       <div class="detail-tabs" role="tablist" aria-label="Информация о товаре">
@@ -228,9 +232,10 @@ function toast(message) {
   toastTimer = setTimeout(() => node.classList.remove('show'), 1800);
 }
 
-document.addEventListener('click', event => {
+document.addEventListener('click', async event => {
   const favorite = event.target.closest('[data-favorite]');
   const buy = event.target.closest('[data-buy]');
+  const waitlist = event.target.closest('[data-waitlist]');
   const jump = event.target.closest('[data-category-jump]');
   const detailImage = event.target.closest('[data-detail-image]');
   const detailTab = event.target.closest('[data-detail-tab]');
@@ -250,6 +255,21 @@ document.addEventListener('click', event => {
     persist();
     render();
     toast(`${product.artist} — добавлено в корзину`);
+    return;
+  }
+  if (waitlist) {
+    const product = products.find(item => item.id === waitlist.dataset.waitlist);
+    if (!product) return;
+    try {
+      const added = await window.SOYUZ_AUTH?.addToWaitlist(product);
+      if (added) {
+        render();
+        if (el('#product-dialog')?.open && openProductId === product.id) openProduct(product);
+        toast('Товар добавлен в лист ожидания');
+      }
+    } catch (error) {
+      toast(error.message);
+    }
     return;
   }
   if (jump) {
@@ -292,6 +312,17 @@ all('input[name="category"]').forEach(input => input.addEventListener('change', 
   state.visibleCount = 48;
   render();
 }));
+
+function resetCategoryToAll() {
+  state.category = 'all';
+  state.visibleCount = 48;
+  const allCategory = document.querySelector('input[name="category"][value="all"]');
+  if (allCategory) allCategory.checked = true;
+  if (products.length) render();
+}
+
+window.addEventListener('soyuz-auth-change', resetCategoryToAll);
+window.addEventListener('soyuz-waitlist-change', () => { if (products.length) render(); });
 el('#artist-filter').addEventListener('input', event => {
   state.artist = event.target.value;
   state.visibleCount = 48;

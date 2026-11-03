@@ -23,6 +23,10 @@ jobs:
         env:
           OZON_CLIENT_ID: ${{ secrets.OZON_CLIENT_ID }}
           OZON_API_KEY: ${{ secrets.OZON_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          WAITLIST_FROM_EMAIL: ${{ secrets.WAITLIST_FROM_EMAIL }}
         run: python scripts/sync_ozon.py
 
       - name: Опубликовать изменения

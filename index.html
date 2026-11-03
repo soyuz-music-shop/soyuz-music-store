@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script>if ('scrollRestoration' in history) history.scrollRestoration = 'manual';</script>
-  <link rel="stylesheet" href="styles.css?v=18">
-  <script src="auth-config.js?v=18"></script>
-  <script src="auth.js?v=18" defer></script>
-  <script src="app.js?v=18" defer></script>
+  <link rel="stylesheet" href="styles.css?v=19">
+  <script src="auth-config.js?v=19"></script>
+  <script src="auth.js?v=19" defer></script>
+  <script src="app.js?v=19" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -165,6 +165,12 @@
       <button class="auth-tab" type="button" data-auth-mode="register" role="tab" aria-selected="false">Регистрация</button>
     </div>
     <form id="auth-form">
+      <label class="auth-register-field" hidden>Имя
+        <input id="auth-name" type="text" autocomplete="name" maxlength="80" placeholder="Как к вам обращаться">
+      </label>
+      <label class="auth-register-field" hidden>Электронная почта
+        <input id="auth-email" type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="name@example.com">
+      </label>
       <label>Номер телефона
         <input id="auth-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 999 123-45-67" required>
       </label>
@@ -176,7 +182,18 @@
       <button class="primary-button auth-submit" type="submit">Войти</button>
     </form>
     <div class="auth-session" id="auth-session" hidden>
-      <p>Вы вошли как <strong id="auth-user-phone"></strong></p>
+      <p>Вы вошли как <strong id="auth-user-name"></strong></p>
+      <form class="auth-profile" id="auth-profile-form">
+        <label>Имя
+          <input id="auth-profile-name" type="text" autocomplete="name" maxlength="80" required>
+        </label>
+        <label>Электронная почта для уведомлений
+          <input id="auth-profile-email" type="email" inputmode="email" autocomplete="email" maxlength="160" required>
+        </label>
+        <p class="auth-profile-phone">Логин: <strong id="auth-user-phone"></strong></p>
+        <p class="auth-message" id="auth-profile-message" role="status" aria-live="polite"></p>
+        <button class="primary-button auth-profile-save" type="submit">Сохранить данные</button>
+      </form>
       <button class="text-button" id="auth-logout" type="button">Выйти</button>
     </div>
   </dialog>
