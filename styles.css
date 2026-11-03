@@ -85,7 +85,6 @@ h1 em { color: var(--gold); font-style: normal; }
 .hero-art { position: relative; min-height: 420px; align-self: stretch; }
 .hero-vinyl-wrap { position: absolute; z-index: 1; width: min(55vw, 900px); max-width: none; right: -6vw; top: 50%; transform: translateY(-50%); }
 .hero-vinyl-reference { display: block; width: 100%; height: auto; filter: drop-shadow(0 28px 45px rgba(41,31,15,.16)); }
-.hero-label-logo { position: absolute; z-index: 2; left: 36%; top: 72.5%; width: 3.5%; height: auto; transform-origin: 50% 50%; transform: perspective(320px) rotateX(30deg); opacity: .94; }
 
 .category-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 0 2vw 44px; }
 #categories { scroll-margin-top: 128px; }

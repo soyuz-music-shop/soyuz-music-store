@@ -1,6 +1,12 @@
 let products = [];
 let artistNames = [];
 
+window.addEventListener('pageshow', () => {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }));
+});
+
 const state = {
   search: '',
   category: 'all',
@@ -29,6 +35,13 @@ const safe = (value) => String(value ?? '').replace(/[&<>'"]/g, char => ({
 const artistGroup = artist => {
   const firstLetter = normalizeSearchText(artist).charAt(0).toLocaleUpperCase('ru') || '#';
   return /[A-ZА-Я0-9]/.test(firstLetter) ? firstLetter : '#';
+};
+
+const artistNameScore = artist => {
+  const letters = String(artist).replace(/[^a-zа-яё]/gi, '');
+  const hasUpper = /[A-ZА-ЯЁ]/.test(letters);
+  const hasLower = /[a-zа-яё]/.test(letters);
+  return (hasUpper && hasLower ? 10 : 0) + Math.min(String(artist).length, 100) / 1000;
 };
 
 function renderArtistList(query = '') {
@@ -405,7 +418,19 @@ async function loadProducts() {
     all('[data-count]').forEach(node => {
       node.textContent = node.dataset.count === 'all' ? products.length : (counts[node.dataset.count] || 0);
     });
-    artistNames = [...new Set(products.map(product => String(product.artist || '').trim()).filter(Boolean))]
+    const canonicalArtists = new Map();
+    products.forEach(product => {
+      const artist = String(product.artist || '').trim();
+      if (!artist) return;
+      const key = normalizeSearchText(artist);
+      const current = canonicalArtists.get(key);
+      if (!current || artistNameScore(artist) > artistNameScore(current)) canonicalArtists.set(key, artist);
+    });
+    products.forEach(product => {
+      const key = normalizeSearchText(product.artist);
+      if (key && canonicalArtists.has(key)) product.artist = canonicalArtists.get(key);
+    });
+    artistNames = [...canonicalArtists.values()]
       .sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
     renderArtistList();
     const maxPrice = Math.ceil(Math.max(...products.map(product => product.price), 1000) / 5000) * 5000;
