@@ -3,6 +3,7 @@ let products = [];
 const state = {
   search: '',
   category: 'all',
+  artist: '',
   stockOnly: false,
   maxPrice: 100000,
   sort: 'new',
@@ -15,6 +16,11 @@ const state = {
 const el = (selector) => document.querySelector(selector);
 const all = (selector) => [...document.querySelectorAll(selector)];
 const money = (value) => new Intl.NumberFormat('ru-RU').format(value) + ' ₽';
+const normalizeSearchText = value => String(value ?? '')
+  .toLocaleLowerCase('ru')
+  .replace(/ё/g, 'е')
+  .replace(/[^a-zа-я0-9]+/gi, ' ')
+  .trim();
 const safe = (value) => String(value ?? '').replace(/[&<>'"]/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
 }[char]));
@@ -56,12 +62,8 @@ const categoryColor = {
 };
 
 function filteredProducts() {
-  const normalizeSearchText = value => String(value ?? '')
-    .toLocaleLowerCase('ru')
-    .replace(/ё/g, 'е')
-    .replace(/[^a-zа-я0-9]+/gi, ' ')
-    .trim();
   const queryTokens = normalizeSearchText(state.search).split(/\s+/).filter(Boolean);
+  const artistQuery = normalizeSearchText(state.artist);
   const result = products.filter(product => {
     const searchable = normalizeSearchText([
       product.artist,
@@ -75,6 +77,7 @@ function filteredProducts() {
     ].join(' '));
     return (!queryTokens.length || queryTokens.every(token => searchable.includes(token)))
       && (state.category === 'all' || product.category === state.category)
+      && (!artistQuery || normalizeSearchText(product.artist).includes(artistQuery))
       && (!state.stockOnly || product.available !== false)
       && product.price <= state.maxPrice
       && (!state.favoritesOnly || state.favorites.has(product.id));
@@ -237,6 +240,11 @@ all('input[name="category"]').forEach(input => input.addEventListener('change', 
   state.visibleCount = 48;
   render();
 }));
+el('#artist-filter').addEventListener('input', event => {
+  state.artist = event.target.value;
+  state.visibleCount = 48;
+  render();
+});
 el('#stock-only').addEventListener('change', event => {
   state.stockOnly = event.target.checked;
   state.visibleCount = 48;
@@ -276,11 +284,13 @@ el('#reset-filters').addEventListener('click', () => {
   const maxPrice = Number(el('#price-range').max);
   state.search = '';
   state.category = 'all';
+  state.artist = '';
   state.stockOnly = false;
   state.maxPrice = maxPrice;
   state.favoritesOnly = false;
   state.visibleCount = 48;
   el('#header-search').value = '';
+  el('#artist-filter').value = '';
   el('#stock-only').checked = false;
   el('#price-range').value = maxPrice;
   el('#price-output').textContent = money(maxPrice);
@@ -341,6 +351,9 @@ async function loadProducts() {
     all('[data-count]').forEach(node => {
       node.textContent = node.dataset.count === 'all' ? products.length : (counts[node.dataset.count] || 0);
     });
+    const artists = [...new Set(products.map(product => String(product.artist || '').trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'ru'));
+    el('#artist-options').innerHTML = artists.map(artist => `<option value="${safe(artist)}"></option>`).join('');
     const maxPrice = Math.ceil(Math.max(...products.map(product => product.price), 1000) / 5000) * 5000;
     el('#price-range').max = maxPrice;
     el('#price-range').value = maxPrice;

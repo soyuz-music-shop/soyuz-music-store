@@ -44,6 +44,7 @@
     --counter-text: #11110f;
     --disabled-bg: #4a463f;
   }
+  .site-logo { filter: brightness(0) saturate(100%) invert(72%) sepia(66%) saturate(684%) hue-rotate(358deg) brightness(91%) contrast(87%); }
 }
 
 * { box-sizing: border-box; }
@@ -55,6 +56,7 @@ a { color: inherit; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 .site-header { height: 70px; display: grid; grid-template-columns: auto auto minmax(240px, 1fr) auto auto; gap: 18px; align-items: center; padding: 0 4vw; background: var(--header-bg); border: 0; box-shadow: none; position: sticky; top: 0; z-index: 50; backdrop-filter: blur(16px); }
 .brand img { width: 50px; height: 50px; object-fit: contain; display: block; }
+.site-logo { background: transparent; transition: filter .2s ease; }
 .main-nav { display: flex; align-items: center; gap: 10px; }
 .main-nav a { text-decoration: none; font-weight: 700; padding: 8px 16px; border-radius: 999px; }
 .main-nav a.active, .main-nav a:hover { background: linear-gradient(135deg, var(--gold), #c79a2c); color: white; }
@@ -81,7 +83,9 @@ h1 em { color: var(--gold); font-style: normal; }
 .hero-points { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 22px; color: var(--muted); font-size: 12px; font-weight: 600; }
 .hero-points span::before { content: "✓"; color: var(--gold); margin-right: 7px; font-weight: 900; }
 .hero-art { position: relative; min-height: 420px; align-self: stretch; }
-.hero-vinyl-reference { position: absolute; z-index: 1; width: min(55vw, 900px); max-width: none; height: auto; right: -6vw; top: 50%; transform: translateY(-50%); filter: drop-shadow(0 28px 45px rgba(41,31,15,.16)); }
+.hero-vinyl-wrap { position: absolute; z-index: 1; width: min(55vw, 900px); max-width: none; right: -6vw; top: 50%; transform: translateY(-50%); }
+.hero-vinyl-reference { display: block; width: 100%; height: auto; filter: drop-shadow(0 28px 45px rgba(41,31,15,.16)); }
+.hero-label-logo { position: absolute; z-index: 2; left: 36%; top: 72.5%; width: 3.5%; height: auto; transform-origin: 50% 50%; transform: perspective(320px) rotateX(30deg); opacity: .94; }
 
 .category-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 0 2vw 44px; }
 #categories { scroll-margin-top: 128px; }
@@ -116,6 +120,9 @@ select { display: block; margin-top: 6px; min-width: 220px; padding: 12px 42px 1
 .filter-group label { display: flex; align-items: center; gap: 10px; margin: 11px 0; font-size: 13px; cursor: pointer; }
 .filter-group label span { margin-left: auto; color: var(--muted); }
 .filter-group input[type="radio"], .filter-group input[type="checkbox"] { accent-color: var(--gold); width: 17px; height: 17px; }
+.filter-search-label { display: block !important; margin: 0 0 8px !important; color: var(--muted); font-size: 11px !important; cursor: default !important; }
+.filter-search { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--white); color: var(--ink); outline: 0; }
+.filter-search:focus { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent); }
 .range-label { display: block !important; }
 .range-label > span { display: flex; justify-content: space-between; color: var(--muted); }
 .range-label input { width: 100%; accent-color: var(--gold); margin-top: 14px; }
@@ -227,7 +234,7 @@ footer p:last-child { margin-left: auto; }
   .site-header { margin-bottom: 44px; }
   .hero { grid-template-columns: 1fr; padding-top: 32px; min-height: auto; }
   .hero-art { min-height: 250px; margin-top: 8px; }
-  .hero-vinyl-reference { width: min(138vw, 880px); right: -48vw; }
+  .hero-vinyl-wrap { width: min(138vw, 880px); right: -48vw; }
   .category-strip { grid-template-columns: repeat(2,1fr); }
   .category-card { min-height: 150px; }
   .benefits { grid-template-columns: 1fr; }
@@ -255,7 +262,7 @@ footer p:last-child { margin-left: auto; }
   .hero .primary-button { min-width: 0; width: 100%; padding-block: 13px; }
   .hero-points { display: grid; margin-top: 16px; }
   .hero-art { min-height: 220px; }
-  .hero-vinyl-reference { width: 148vw; right: -55vw; }
+  .hero-vinyl-wrap { width: 148vw; right: -55vw; }
   .category-strip { grid-template-columns: 1fr; padding-inline: 12px; }
   .category-card { min-height: 0; }
   .benefits { padding-inline: 24px; }

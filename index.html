@@ -11,13 +11,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=8">
-  <script src="app.js?v=8" defer></script>
+  <link rel="stylesheet" href="styles.css?v=12">
+  <script src="app.js?v=12" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
     <a class="brand" href="#top" aria-label="Союз Мьюзик — на главную">
-      <img src="logo.png" alt="Союз Мьюзик" width="112" height="112">
+      <img class="site-logo" src="logo-theme.png?v=12" alt="Союз Мьюзик" width="112" height="112">
     </a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Меню</button>
     <nav class="main-nav" id="main-nav" aria-label="Основная навигация">
@@ -55,7 +55,10 @@
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">
-        <img class="hero-vinyl-reference" src="hero-vinyl.png" alt="">
+        <div class="hero-vinyl-wrap">
+          <img class="hero-vinyl-reference" src="hero-vinyl-transparent.png?v=12" alt="">
+          <img class="hero-label-logo" src="logo-label-black.png?v=12" alt="">
+        </div>
       </div>
     </section>
 
@@ -105,6 +108,12 @@
             <label><input type="radio" name="category" value="movie"> Фильмы <span data-count="movie">0</span></label>
           </div>
           <div class="filter-group">
+            <h3>Артист</h3>
+            <label class="filter-search-label" for="artist-filter">Выберите или начните вводить имя</label>
+            <input class="filter-search" id="artist-filter" type="search" list="artist-options" placeholder="Все артисты" autocomplete="off">
+            <datalist id="artist-options"></datalist>
+          </div>
+          <div class="filter-group">
             <h3>Наличие</h3>
             <label><input id="stock-only" type="checkbox"> Только в наличии</label>
           </div>
@@ -131,7 +140,7 @@
   </main>
 
   <footer>
-    <img src="logo.png" alt="" width="72" height="72">
+    <img class="site-logo" src="logo-theme.png?v=12" alt="" width="72" height="72">
     <p>© <span id="year"></span> Союз Мьюзик.</p>
     <p>Оплата и доставка — через Ozon</p>
   </footer>
