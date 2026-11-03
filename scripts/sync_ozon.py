@@ -68,7 +68,10 @@ def main():
 
     last_id = ""
     while True:
-        payload = {"limit": 100}
+        payload = {
+            "filter": {"visibility": "ALL"},
+            "limit": 100,
+        }
         if last_id:
             payload["last_id"] = last_id
         result = post("/v4/product/info/stocks", payload)
