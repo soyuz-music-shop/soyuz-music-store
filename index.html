@@ -58,10 +58,10 @@
     </section>
 
     <section class="category-strip" id="categories" aria-label="Категории">
-      <button class="category-card vinyl-card" data-category-jump="vinyl"><span>Винил</span><i>→</i><img src="category-vinyl.svg" alt=""></button>
-      <button class="category-card cd-card" data-category-jump="cd"><span>CD</span><i>→</i><img src="category-cd.svg" alt=""></button>
-      <button class="category-card tape-card" data-category-jump="tape"><span>Кассеты</span><i>→</i><img src="category-tape.svg" alt=""></button>
-      <button class="category-card book-card" data-category-jump="book"><span>Книги</span><i>→</i><img src="category-books.svg" alt=""></button>
+      <button class="category-card vinyl-card" data-category-jump="vinyl" aria-label="Открыть винил"><img src="category-reference.png" alt=""></button>
+      <button class="category-card cd-card" data-category-jump="cd" aria-label="Открыть CD"><img src="category-reference.png" alt=""></button>
+      <button class="category-card tape-card" data-category-jump="tape" aria-label="Открыть кассеты"><img src="category-reference.png" alt=""></button>
+      <button class="category-card book-card" data-category-jump="book" aria-label="Открыть книги"><img src="category-reference.png" alt=""></button>
     </section>
 
     <section class="benefits" id="benefits" aria-label="Преимущества магазина">
@@ -143,6 +143,11 @@
     <div class="cart-total"><span>Итого</span><strong id="cart-total">0 ₽</strong></div>
     <button class="primary-button checkout-button" type="button">Перейти к оплате Ozon Pay</button>
     <p class="dialog-note">В демо-версии платёжный токен ещё не подключён.</p>
+  </dialog>
+
+  <dialog class="product-dialog" id="product-dialog">
+    <button class="close-button product-close" type="button" aria-label="Закрыть карточку товара">×</button>
+    <div id="product-detail"></div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

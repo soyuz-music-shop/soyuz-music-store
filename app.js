@@ -53,20 +53,48 @@ function productCard(product) {
     ? `<img class="cover-image" src="${safe(product.image)}" alt="" loading="lazy" decoding="async">`
     : '';
   const chip = product.format || product.detail || '';
-  return `<article class="product-card" data-category="${safe(product.category)}">
+  return `<article class="product-card" data-category="${safe(product.category)}" data-product="${safe(product.id)}" tabindex="0" aria-label="Подробнее: ${safe(product.artist)} — ${safe(product.title)}">
     <div class="cover ${product.image ? 'has-image' : ''}" style="--cover:${categoryColor[product.category]}" data-mark="${safe(product.artist)}">
       ${cover}
-      <button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button>
       ${product.badge ? `<span class="badge">${safe(product.badge)}</span>` : ''}
     </div>
     <div class="product-info">
-      <h3>${safe(product.artist)}</h3>
+      <div class="product-title-row"><h3>${safe(product.artist)}</h3><button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button></div>
       <p class="album">${safe(product.title)}</p>
       <div class="chips"><span>${categoryName[product.category]}</span>${chip ? `<span>${safe(chip)}</span>` : ''}</div>
       <div class="price-row"><span class="price">${money(product.price)}</span><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
       <button class="buy-button" type="button" data-buy="${safe(product.id)}" ${available ? '' : 'disabled'}>${available ? 'В корзину' : 'Сообщить о поступлении'}</button>
     </div>
   </article>`;
+}
+
+let openProductId = null;
+
+function openProduct(product) {
+  if (!product) return;
+  openProductId = product.id;
+  const favorite = state.favorites.has(product.id);
+  const images = (product.images?.length ? product.images : [product.image]).filter(Boolean);
+  const specs = Object.entries(product.specs || {});
+  const description = safe(product.description || '').replace(/\n/g, '<br>');
+  el('#product-detail').innerHTML = `
+    <div class="detail-gallery">
+      ${images[0] ? `<img class="detail-main-image" id="detail-main-image" src="${safe(images[0])}" alt="${safe(product.title)}">` : '<div class="detail-image-placeholder">Нет изображения</div>'}
+      ${images.length > 1 ? `<div class="detail-thumbnails">${images.slice(0, 10).map((image, index) => `<button type="button" data-detail-image="${safe(image)}" aria-label="Показать фото ${index + 1}"><img src="${safe(image)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
+    </div>
+    <div class="detail-content">
+      <p class="eyebrow">${safe(categoryName[product.category] || 'Товар')}</p>
+      <h2>${safe(product.artist)}</h2>
+      <p class="detail-title">${safe(product.title)}</p>
+      <div class="detail-price-row"><strong>${money(product.price)}</strong><span class="stock">✓ В продаже</span></div>
+      <div class="detail-actions">
+        <button class="buy-button" type="button" data-buy="${safe(product.id)}">В корзину</button>
+        <button class="detail-favorite ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}">${favorite ? '♥ В избранном' : '♡ В избранное'}</button>
+      </div>
+      ${description ? `<section class="detail-section"><h3>Описание</h3><p class="detail-description">${description}</p></section>` : ''}
+      ${specs.length ? `<section class="detail-section"><h3>Характеристики</h3><dl class="detail-specs">${specs.map(([label, value]) => `<div><dt>${safe(label)}</dt><dd>${safe(value)}</dd></div>`).join('')}</dl></section>` : ''}
+    </div>`;
+  if (!el('#product-dialog').open) el('#product-dialog').showModal();
 }
 
 function render() {
@@ -98,11 +126,15 @@ document.addEventListener('click', event => {
   const favorite = event.target.closest('[data-favorite]');
   const buy = event.target.closest('[data-buy]');
   const jump = event.target.closest('[data-category-jump]');
+  const detailImage = event.target.closest('[data-detail-image]');
+  const card = event.target.closest('[data-product]');
   if (favorite) {
     const id = favorite.dataset.favorite;
     state.favorites.has(id) ? state.favorites.delete(id) : state.favorites.add(id);
     persist();
     render();
+    if (el('#product-dialog')?.open && openProductId === id) openProduct(products.find(item => item.id === id));
+    return;
   }
   if (buy) {
     const product = products.find(item => item.id === buy.dataset.buy);
@@ -111,6 +143,7 @@ document.addEventListener('click', event => {
     persist();
     render();
     toast(`${product.artist} — добавлено в корзину`);
+    return;
   }
   if (jump) {
     const input = document.querySelector(`input[name="category"][value="${jump.dataset.categoryJump}"]`);
@@ -119,6 +152,20 @@ document.addEventListener('click', event => {
     state.visibleCount = 48;
     render();
     el('#catalog').scrollIntoView();
+    return;
+  }
+  if (detailImage) {
+    el('#detail-main-image').src = detailImage.dataset.detailImage;
+    return;
+  }
+  if (card) openProduct(products.find(item => item.id === card.dataset.product));
+});
+
+document.addEventListener('keydown', event => {
+  const card = event.target.closest?.('[data-product]');
+  if (card && (event.key === 'Enter' || event.key === ' ')) {
+    event.preventDefault();
+    openProduct(products.find(item => item.id === card.dataset.product));
   }
 });
 
@@ -194,7 +241,8 @@ el('#cart-button').addEventListener('click', () => {
   renderCart();
   el('#cart-dialog').showModal();
 });
-el('.close-button').addEventListener('click', () => el('#cart-dialog').close());
+el('.cart-dialog .close-button').addEventListener('click', () => el('#cart-dialog').close());
+el('.product-close').addEventListener('click', () => el('#product-dialog').close());
 el('#cart-items').addEventListener('click', event => {
   const remove = event.target.closest('[data-remove]');
   if (!remove) return;
