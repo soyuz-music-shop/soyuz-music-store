@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css?v=18">
-  <script src="admin.js?v=18" defer></script>
+  <script src="admin.js?v=19" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -23,19 +23,19 @@
   <main class="admin-shell">
     <section class="admin-intro">
       <div><p class="eyebrow">Панель управления</p><h1>Каталог без сложных таблиц</h1><p>Редактируйте карточки вручную или загружайте готовые Excel-шаблоны Ozon.</p></div>
-      <span class="connection-badge" id="connection-badge">Не подключено к GitHub</span>
+      <span class="connection-badge connected" id="connection-badge">Автоматизация GitHub подключена</span>
     </section>
 
     <section class="setup-card" aria-labelledby="github-title">
       <div>
         <p class="step-number">1</p>
-        <h2 id="github-title">Подключение к GitHub</h2>
-        <p>Токен нужен только для сохранения. Он остаётся в памяти вкладки и исчезает после её закрытия.</p>
+        <h2 id="github-title">Доступ для ручного редактирования</h2>
+        <p>Автоматическое обновление каталога уже подключено. Личный токен нужен только для публикации ручных правок и загрузки Excel прямо с этой страницы. Он остаётся в памяти вкладки и исчезает после её закрытия.</p>
       </div>
       <div class="token-form">
         <label for="github-token">GitHub token</label>
         <div><input id="github-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button class="primary-button" id="connect-github" type="button">Подключить</button></div>
-        <p id="github-status" class="field-status" role="status" aria-live="polite">Нужен fine-grained token с доступом Contents: Read and write к репозиторию.</p>
+        <p id="github-status" class="field-status" role="status" aria-live="polite">Для ручных правок нужен fine-grained token с доступом Contents: Read and write к репозиторию.</p>
       </div>
     </section>
 
@@ -46,8 +46,8 @@
         <p>Запустите синхронизацию вручную, чтобы сейчас проверить новые позиции, остатки, цены, описания, характеристики и фотографии.</p>
       </div>
       <div class="sync-actions">
-        <button class="primary-button" id="sync-now" type="button" disabled>Обновить сейчас</button>
-        <p id="sync-status" class="field-status" role="status" aria-live="polite">Сначала подключите GitHub.</p>
+        <button class="primary-button" id="sync-now" type="button">Обновить сейчас</button>
+        <p id="sync-status" class="field-status" role="status" aria-live="polite">Автоматическая проверка выполняется каждый час. Для немедленного запуска откроется GitHub Actions.</p>
       </div>
     </section>
 

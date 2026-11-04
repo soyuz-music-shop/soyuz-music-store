@@ -3,6 +3,7 @@ const REPO = 'soyuz-music-store';
 const BRANCH = 'main';
 const OVERRIDES_PATH = 'admin-overrides.json';
 const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+const SYNC_WORKFLOW_URL = `https://github.com/${OWNER}/${REPO}/actions/workflows/sync-ozon.yml`;
 
 let baseProducts = [];
 let overrides = emptyOverrides();
@@ -209,9 +210,14 @@ el('#connect-github').addEventListener('click', async () => {
 });
 
 el('#sync-now').addEventListener('click', async () => {
-  if (!githubToken) return;
   const button = el('#sync-now');
   const status = el('#sync-status');
+  if (!githubToken) {
+    window.open(SYNC_WORKFLOW_URL, '_blank', 'noopener');
+    status.textContent = 'Страница запуска открыта. Нажмите «Run workflow», затем ещё раз «Run workflow». Автоматические обновления продолжат работать каждый час независимо от этого.';
+    status.className = 'field-status success';
+    return;
+  }
   button.disabled = true;
   button.textContent = 'Запускаем…';
   status.textContent = 'Передаём команду GitHub…';
@@ -234,10 +240,33 @@ el('#sync-now').addEventListener('click', async () => {
     status.textContent = `Не удалось запустить: ${error.message}`;
     status.className = 'field-status error';
   } finally {
-    button.disabled = !githubToken;
+    button.disabled = false;
     button.textContent = 'Обновить сейчас';
   }
 });
+
+async function loadAutomationStatus() {
+  try {
+    const response = await fetch(`${API}/actions/workflows/sync-ozon.yml/runs?per_page=1`, {
+      headers: { Accept: 'application/vnd.github+json' },
+      cache: 'no-store'
+    });
+    if (!response.ok) return;
+    const data = await response.json();
+    const run = data.workflow_runs?.[0];
+    if (!run) return;
+    const updated = new Intl.DateTimeFormat('ru-RU', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }).format(new Date(run.updated_at));
+    const label = run.status === 'completed'
+      ? (run.conclusion === 'success' ? 'успешно' : 'с ошибкой')
+      : 'выполняется';
+    el('#sync-status').textContent = `Последняя проверка: ${updated}, ${label}. Автоматическая проверка выполняется каждый час.`;
+    el('#sync-status').className = `field-status ${run.conclusion === 'success' ? 'success' : ''}`;
+  } catch (_) {
+    // Страница остаётся рабочей, даже если GitHub временно не отдал публичный статус.
+  }
+}
 
 function utf8Base64(text) {
   const bytes = new TextEncoder().encode(text);
@@ -506,3 +535,4 @@ window.addEventListener('beforeunload', event => {
 });
 
 loadData();
+loadAutomationStatus();
