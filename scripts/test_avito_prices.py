@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from scripts.sync_ozon import apply_avito_prices
+from scripts.sync_ozon import apply_avito_prices, normalized_identifiers
 
 
 class AvitoPriceTests(unittest.TestCase):
@@ -58,6 +58,24 @@ class AvitoPriceTests(unittest.TestCase):
         self.assertEqual(matched, 1)
         self.assertEqual(products[2]["price"], 5990)
         self.assertEqual(products[2]["_avitoItemId"], "999")
+
+    def test_xml_offer_id_matches_product_barcode(self):
+        products = copy.deepcopy(self.products)
+        products[2]["specs"]["Штрихкод"] = "05400863043407"
+        matched = apply_avito_prices(products, [
+            {
+                "id": "8065933904",
+                "offer_id": "5400863043407",
+                "title": "Заголовок может отличаться",
+                "price": 5790,
+            },
+        ])
+        self.assertEqual(matched, 1)
+        self.assertEqual(products[2]["price"], 5790)
+        self.assertEqual(products[2]["_avitoItemId"], "8065933904")
+
+    def test_identifier_normalization_ignores_barcode_leading_zero(self):
+        self.assertIn("743219168320", normalized_identifiers("0743219168320"))
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ const BRANCH = 'main';
 const OVERRIDES_PATH = 'admin-overrides.json';
 const SITE_CONTENT_PATH = 'site-content.json';
 const AVITO_REPORT_PATH = 'avito-price-report.json';
+const AVITO_XML_PRICES_PATH = 'avito-xml-prices.json';
 const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
 const SYNC_WORKFLOW_URL = `https://github.com/${OWNER}/${REPO}/actions/workflows/sync-ozon.yml`;
 const GITHUB_SESSION_KEY = 'soyuz-admin-github-token';
@@ -18,6 +19,7 @@ let visibleCount = 100;
 let editingId = '';
 let addingProduct = false;
 let selectedExcelFiles = [];
+let selectedXmlFile = null;
 let siteContent = defaultSiteContent();
 let siteContentSha = '';
 let aboutDirty = false;
@@ -225,6 +227,8 @@ function renderAvitoReport() {
     : '—';
   const statusText = avitoReport.status === 'success'
     ? `Найдено цен: ${avitoReport.matched || 0}. Не найдено: ${avitoReport.unmatchedCount || 0}. Объявлений Avito: ${avitoReport.listings || 0}.`
+    : avitoReport.status === 'xml'
+      ? `Цены из XML: найдено ${avitoReport.matched || 0}, не найдено ${avitoReport.unmatchedCount || 0}. Позиций в XML: ${avitoReport.listings || 0}.`
     : avitoReport.status === 'error'
       ? 'Avito был временно недоступен, поэтому сохранены цены Ozon.'
       : 'Ключи Avito ещё не настроены, поэтому сохранены цены Ozon.';
@@ -322,6 +326,7 @@ async function connectGithubToken(token, restored = false) {
     el('#publish-changes').disabled = !dirty;
     el('#save-about').disabled = !aboutDirty;
     el('#upload-excel').disabled = !selectedExcelFiles.length;
+    el('#upload-xml-prices').disabled = !selectedXmlFile;
     el('#sync-now').disabled = false;
     el('#sync-status').textContent = 'Готово к запуску. Обычно обновление занимает 1–5 минут.';
     el('#sync-status').className = 'field-status success';
@@ -350,6 +355,7 @@ el('#disconnect-github').addEventListener('click', () => {
   el('#publish-changes').disabled = true;
   el('#save-about').disabled = true;
   el('#upload-excel').disabled = true;
+  el('#upload-xml-prices').disabled = true;
   el('#sync-now').disabled = false;
   setGithubStatus('Отключено. Сохранённый доступ удалён из браузера.', 'success');
   setAvitoSecretStatus('Подключите GitHub в первом блоке, затем сохраните оба ключа.');
@@ -677,6 +683,113 @@ el('#avito-report-search').addEventListener('input', () => {
 el('#avito-report-more').addEventListener('click', () => {
   avitoReportVisibleCount += 200;
   renderAvitoReport();
+});
+
+function setXmlFile(file) {
+  const valid = file && /\.xml(?:\.gz)?$/i.test(file.name);
+  selectedXmlFile = valid ? file : null;
+  el('#xml-file-info').innerHTML = selectedXmlFile
+    ? `<span>${safe(selectedXmlFile.name)} · ${(selectedXmlFile.size / 1024 / 1024).toFixed(1)} МБ</span>`
+    : '<span>Файл не выбран</span>';
+  el('#upload-xml-prices').disabled = !githubToken || !selectedXmlFile;
+  if (file && !valid) {
+    el('#xml-status').textContent = 'Выберите файл с расширением .xml или .xml.gz.';
+    el('#xml-status').className = 'field-status error';
+  }
+}
+
+async function xmlTextFromFile(file) {
+  if (!file.name.toLowerCase().endsWith('.gz')) return file.text();
+  if (!('DecompressionStream' in window)) {
+    throw new Error('Этот браузер не умеет распаковывать .gz. Распакуйте файл и загрузите обычный .xml.');
+  }
+  const stream = file.stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Response(stream).text();
+}
+
+function directChildText(node, name) {
+  const child = [...node.children].find(item => item.localName === name);
+  return child?.textContent?.trim() || '';
+}
+
+async function parseAvitoXml(file) {
+  const source = await xmlTextFromFile(file);
+  const documentNode = new DOMParser().parseFromString(source, 'application/xml');
+  const parserError = documentNode.querySelector('parsererror');
+  if (parserError) throw new Error('Файл не удалось прочитать как XML. Проверьте, что выгрузка не повреждена.');
+  const prices = [...documentNode.getElementsByTagName('Ad')].map(ad => ({
+    offerId: directChildText(ad, 'Id'),
+    avitoId: directChildText(ad, 'AvitoId'),
+    title: directChildText(ad, 'Title'),
+    price: Number(directChildText(ad, 'Price').replace(/\s/g, '').replace(',', '.')) || 0
+  })).filter(item => item.offerId && item.price > 0);
+  if (!prices.length) throw new Error('В XML не найдено ни одной позиции с Id и Price.');
+  return {
+    version: 1,
+    source: 'avito-xml',
+    originalName: file.name,
+    uploadedAt: new Date().toISOString(),
+    count: prices.length,
+    prices
+  };
+}
+
+async function saveAvitoXmlPrices(payload) {
+  let current = null;
+  try {
+    current = await github(`/contents/${AVITO_XML_PRICES_PATH}?ref=${BRANCH}`);
+  } catch (error) {
+    if (!/404|Not Found/i.test(error.message)) throw error;
+  }
+  const body = {
+    message: 'Обновить цены Avito из XML',
+    content: utf8Base64(`${JSON.stringify(payload)}\n`),
+    branch: BRANCH
+  };
+  if (current?.sha) body.sha = current.sha;
+  await github(`/contents/${AVITO_XML_PRICES_PATH}`, {
+    method: 'PUT',
+    body: JSON.stringify(body)
+  });
+}
+
+el('#xml-file').addEventListener('change', event => setXmlFile(event.target.files[0]));
+['dragenter', 'dragover'].forEach(type => el('#xml-drop-zone').addEventListener(type, event => {
+  event.preventDefault();
+  el('#xml-drop-zone').classList.add('dragging');
+}));
+['dragleave', 'drop'].forEach(type => el('#xml-drop-zone').addEventListener(type, event => {
+  event.preventDefault();
+  el('#xml-drop-zone').classList.remove('dragging');
+}));
+el('#xml-drop-zone').addEventListener('drop', event => setXmlFile(event.dataTransfer.files[0]));
+
+el('#upload-xml-prices').addEventListener('click', async () => {
+  if (!githubToken || !selectedXmlFile) return;
+  const button = el('#upload-xml-prices');
+  const status = el('#xml-status');
+  button.disabled = true;
+  button.textContent = 'Читаем XML…';
+  status.textContent = 'Распаковываем и проверяем файл…';
+  status.className = 'field-status';
+  try {
+    const payload = await parseAvitoXml(selectedXmlFile);
+    status.textContent = `Найдено ${payload.count} цен. Сохраняем и запускаем обновление каталога…`;
+    button.textContent = 'Сохраняем…';
+    await saveAvitoXmlPrices(payload);
+    status.textContent = `Загружено ${payload.count} цен. Каталог обновляется автоматически; обычно это занимает 1–5 минут.`;
+    status.className = 'field-status success';
+    selectedXmlFile = null;
+    el('#xml-file').value = '';
+    setXmlFile(null);
+    toast('Цены из XML отправлены на обновление');
+  } catch (error) {
+    status.textContent = `Не удалось загрузить XML: ${error.message}`;
+    status.className = 'field-status error';
+  } finally {
+    button.textContent = 'Загрузить цены из XML';
+    button.disabled = !githubToken || !selectedXmlFile;
+  }
 });
 
 function setExcelFiles(files) {

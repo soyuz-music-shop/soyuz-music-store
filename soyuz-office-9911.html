@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=22">
-  <script src="admin.js?v=24" defer></script>
+  <link rel="stylesheet" href="admin.css?v=23">
+  <script src="admin.js?v=25" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -22,7 +22,7 @@
 
   <main class="admin-shell">
     <section class="admin-intro">
-      <div><p class="eyebrow">Панель управления</p><h1>Каталог без сложных таблиц</h1><p>Редактируйте карточки вручную или загружайте готовые Excel-шаблоны Ozon.</p></div>
+      <div><p class="eyebrow">Панель управления</p><h1>Каталог без сложных таблиц</h1><p>Редактируйте карточки вручную, загружайте Excel Ozon и обновляйте цены из XML Avito.</p></div>
       <span class="connection-badge connected" id="connection-badge">Автоматизация GitHub подключена</span>
     </section>
 
@@ -55,11 +55,29 @@
       </div>
     </section>
 
-    <section class="sync-card" aria-labelledby="sync-title">
+    <section class="xml-card" aria-labelledby="xml-title">
       <div>
         <p class="step-number">3</p>
+        <h2 id="xml-title">Цены из XML Avito</h2>
+        <p>Загрузите выгрузку Avito в формате .xml или .xml.gz. Цены сопоставятся по артикулу или штрихкоду, а для позиций без совпадения сохранится цена Ozon.</p>
+      </div>
+      <div class="drop-zone" id="xml-drop-zone">
+        <input id="xml-file" type="file" accept=".xml,.xml.gz,application/xml,text/xml,application/gzip">
+        <strong>Перетащите .xml или .xml.gz сюда</strong>
+        <span>или нажмите, чтобы выбрать файл</span>
+      </div>
+      <div class="xml-actions">
+        <div id="xml-file-info" class="excel-file-list"><span>Файл не выбран</span></div>
+        <button class="primary-button" id="upload-xml-prices" type="button" disabled>Загрузить цены из XML</button>
+      </div>
+      <p id="xml-status" class="field-status" role="status" aria-live="polite">Файл обрабатывается в браузере: исходный XML никуда не публикуется, в GitHub сохраняется только компактный список цен.</p>
+    </section>
+
+    <section class="sync-card" aria-labelledby="sync-title">
+      <div>
+        <p class="step-number">4</p>
         <h2 id="sync-title">Обновление каталога из Ozon и Avito</h2>
-        <p>Ozon обновляет позиции, остатки, описания, характеристики и фотографии. Цена берётся из Avito, если позиция там найдена однозначно; иначе остаётся цена Ozon.</p>
+        <p>Ozon обновляет позиции, остатки, описания, характеристики и фотографии. Для цены сначала используется последняя загруженная XML-выгрузка Avito, затем API Avito; если совпадения нет, остаётся цена Ozon.</p>
       </div>
       <div class="sync-actions">
         <button class="primary-button" id="sync-now" type="button">Обновить сейчас</button>
@@ -79,7 +97,7 @@
 
     <section class="excel-card" aria-labelledby="excel-title">
       <div>
-        <p class="step-number">4</p>
+        <p class="step-number">5</p>
         <h2 id="excel-title">Загрузка товаров из Excel Ozon</h2>
         <p>Подойдут ваши шаблоны «Кино, музыка, видеоигры, софт» и «Печатная книга». Можно выбрать оба файла сразу.</p>
       </div>
@@ -104,7 +122,7 @@
 
     <section class="about-card" aria-labelledby="about-editor-title">
       <div>
-        <p class="step-number">5</p>
+        <p class="step-number">6</p>
         <h2 id="about-editor-title">Текст «О нас»</h2>
         <p>Здесь можно изменить заголовок и весь текст блока. Пустая строка в большом поле начинает новый абзац.</p>
       </div>
@@ -121,7 +139,7 @@
 
     <section class="catalog-admin" aria-labelledby="catalog-admin-title">
       <div class="section-head">
-        <div><p class="step-number">6</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
+        <div><p class="step-number">7</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
         <div class="head-actions"><button class="secondary-button" id="refresh-data" type="button">Обновить список</button><button class="primary-button" id="publish-changes" type="button" disabled>Опубликовать изменения</button></div>
       </div>
       <div class="admin-toolbar">

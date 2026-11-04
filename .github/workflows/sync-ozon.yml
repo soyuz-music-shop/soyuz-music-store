@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/refresh-catalog"
+      - "avito-xml-prices.json"
   schedule:
     - cron: "17 * * * *"
 

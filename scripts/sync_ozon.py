@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "products.json"
 AVITO_REPORT = ROOT / "avito-price-report.json"
+AVITO_XML_PRICES = ROOT / "avito-xml-prices.json"
 API_ROOT = "https://api-seller.ozon.ru"
 CLIENT_ID = os.environ.get("OZON_CLIENT_ID", "")
 API_KEY = os.environ.get("OZON_API_KEY", "")
@@ -327,6 +328,50 @@ def product_listing_names(product, strip_details=False):
     }
 
 
+def normalized_identifiers(value):
+    raw = text(value).upper()
+    if not raw:
+        return set()
+    identifiers = {raw}
+    identifiers.update(re.findall(r"(?<!\d)\d{8,14}(?!\d)", raw))
+    return {
+        identifier.lstrip("0") or "0"
+        for identifier in identifiers
+        if identifier
+    }
+
+
+def product_identifiers(product):
+    values = [product.get("id")]
+    for name, value in (product.get("specs") or {}).items():
+        lowered = text(name).casefold()
+        if any(needle in lowered for needle in ("артикул", "штрих", "код диска", "ean", "isbn")):
+            values.append(value)
+    identifiers = set()
+    for value in values:
+        identifiers.update(normalized_identifiers(value))
+    return identifiers
+
+
+def load_avito_xml_prices():
+    if not AVITO_XML_PRICES.exists():
+        return []
+    payload = json.loads(AVITO_XML_PRICES.read_text(encoding="utf-8"))
+    listings = []
+    for item in payload.get("prices") or []:
+        price = number(item.get("price"))
+        offer_id = text(item.get("offerId"))
+        if not offer_id or price <= 0:
+            continue
+        listings.append({
+            "id": text(item.get("avitoId")) or offer_id,
+            "offer_id": offer_id,
+            "title": text(item.get("title")),
+            "price": price,
+        })
+    return listings
+
+
 def avito_access_token():
     payload = urllib.parse.urlencode({
         "grant_type": "client_credentials",
@@ -386,6 +431,7 @@ def apply_avito_prices(products, listings):
 
     listing_full_names = {}
     listing_base_names = {}
+    listings_by_offer_identifier = {}
     for listing in listings:
         full = normalized_listing_text(listing.get("title"))
         base = normalized_listing_text(listing.get("title"), strip_details=True)
@@ -393,6 +439,8 @@ def apply_avito_prices(products, listings):
             listing_full_names.setdefault(full, []).append(listing)
         if base:
             listing_base_names.setdefault(base, []).append(listing)
+        for identifier in normalized_identifiers(listing.get("offer_id")):
+            listings_by_offer_identifier.setdefault(identifier, []).append(listing)
 
     matched = 0
     for product in products:
@@ -403,6 +451,11 @@ def apply_avito_prices(products, listings):
             product.pop(key, None)
 
         candidates = []
+        for identifier in product_identifiers(product):
+            matches = listings_by_offer_identifier.get(identifier, [])
+            if len(matches) == 1:
+                candidates = matches
+                break
         specs = product.get("specs") or {}
         explicit = text(
             product.get("avitoId")
@@ -410,7 +463,7 @@ def apply_avito_prices(products, listings):
             or specs.get("ID Avito")
             or specs.get("ID объявления Avito")
         )
-        if explicit:
+        if explicit and not candidates:
             candidates = [listing for listing in listings if text(listing.get("id")) == explicit]
         if not candidates:
             for name in product_listing_names(product):
@@ -747,7 +800,13 @@ def main():
     avito_status = "not_configured"
     avito_listings_count = 0
     avito_error = ""
-    if AVITO_CLIENT_ID and AVITO_CLIENT_SECRET:
+    xml_listings = load_avito_xml_prices()
+    if xml_listings:
+        avito_listings_count = len(xml_listings)
+        avito_matched = apply_avito_prices(products, xml_listings)
+        avito_status = "xml"
+        print(f"Avito XML prices: {avito_matched} matched from {len(xml_listings)} entries")
+    elif AVITO_CLIENT_ID and AVITO_CLIENT_SECRET:
         try:
             listings = avito_items(avito_access_token())
             avito_listings_count = len(listings)
