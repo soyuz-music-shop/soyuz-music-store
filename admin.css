@@ -17,6 +17,7 @@ h1 { max-width:760px; margin:0; font-size:clamp(42px,6vw,78px); line-height:.95;
 .connection-badge.connected { border-color:color-mix(in srgb,var(--green) 45%,var(--line)); color:var(--green); }
 .setup-card,.api-card,.sync-card,.avito-report-card,.excel-card,.about-card,.catalog-admin { margin:18px 0; border:1px solid var(--line); border-radius:22px; padding:26px; background:var(--surface); box-shadow:var(--shadow); }
 .setup-card { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(320px,1.2fr); gap:28px; align-items:end; }
+.setup-card[hidden] { display:none!important; }
 .api-card { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(320px,1.2fr); gap:28px; align-items:start; }
 .sync-card { display:grid; grid-template-columns:minmax(220px,1fr) minmax(260px,.7fr); gap:28px; align-items:center; }
 .setup-card h2,.api-card h2,.sync-card h2,.avito-report-card h2,.excel-card h2,.about-card h2,.catalog-admin h2 { margin:0; font-size:28px; letter-spacing:-.035em; }
