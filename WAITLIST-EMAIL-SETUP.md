@@ -8,7 +8,7 @@
 
 Страница GitHub Actions Secrets:
 
-https://github.com/varvara9911/soyuz-music-store/settings/secrets/actions
+https://github.com/soyuz-music-shop/soyuz-music-store/settings/secrets/actions
 
 Обязательный секрет базы:
 

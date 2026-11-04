@@ -146,14 +146,14 @@ def notify_waitlist(products_by_offer):
             f"<p>{html.escape(customer_name)}, товар снова появился в наличии:</p>"
             f"<p><strong>{html.escape(product_title)}</strong></p>"
             f"<p>Цена: {price} ₽</p>"
-            '<p><a href="https://varvara9911.github.io/soyuz-music-store/">'
+            '<p><a href="https://soyuz-music-shop.github.io/soyuz-music-store/">'
             "Открыть магазин</a></p>"
             "<p>Вы получили письмо, потому что подписались на уведомление о поступлении.</p>"
         )
         text_body = (
             f"{customer_name}, товар снова появился в наличии:\n\n"
             f"{product_title}\nЦена: {price} ₽\n\n"
-            "Открыть магазин: https://varvara9911.github.io/soyuz-music-store/\n\n"
+            "Открыть магазин: https://soyuz-music-shop.github.io/soyuz-music-store/\n\n"
             "Вы получили письмо, потому что подписались на уведомление о поступлении."
         )
         try:
@@ -257,7 +257,7 @@ def notify_newsletter(products_by_offer):
                 f"<p>{html.escape(customer_name)}, у нас появились новые поступления "
                 f"по вашей подписке «{html.escape(scope_label)}»:</p>"
                 f"<ul>{''.join(html_items)}</ul>"
-                '<p><a href="https://varvara9911.github.io/soyuz-music-store/#catalog">'
+                '<p><a href="https://soyuz-music-shop.github.io/soyuz-music-store/#catalog">'
                 "Открыть каталог</a></p>"
                 "<p>Настройки подписки можно изменить в личном кабинете.</p>"
             )
@@ -265,7 +265,7 @@ def notify_newsletter(products_by_offer):
                 f"{customer_name}, у нас появились новые поступления "
                 f"по вашей подписке «{scope_label}»:\n\n"
                 + "\n".join(text_items)
-                + "\n\nОткрыть каталог: https://varvara9911.github.io/soyuz-music-store/#catalog"
+                + "\n\nОткрыть каталог: https://soyuz-music-shop.github.io/soyuz-music-store/#catalog"
                 + "\n\nНастройки подписки можно изменить в личном кабинете."
             )
             provider = send_waitlist_email(preference.get("email"), subject, html_body, text_body)

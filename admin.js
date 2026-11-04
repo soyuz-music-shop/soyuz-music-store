@@ -1,4 +1,4 @@
-const OWNER = 'varvara9911';
+const OWNER = 'soyuz-music-shop';
 const REPO = 'soyuz-music-store';
 const BRANCH = 'main';
 const OVERRIDES_PATH = 'admin-overrides.json';
