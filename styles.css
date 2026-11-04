@@ -132,11 +132,18 @@ h1 em { color: var(--gold); font-style: normal; }
 .category-card { appearance: none; aspect-ratio: 2.45; min-height: 0; border: 0; outline: 0; border-radius: 12px; padding: 0; cursor: pointer; overflow: hidden; position: relative; background: #12110f; box-shadow: none; clip-path: inset(1px round 12px); }
 .category-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .category-card img { display: block; position: absolute; max-width: none; pointer-events: none; }
-.vinyl-card img { width: 411.12%; height: 509.78%; left: -8.34%; top: -336.79%; }
-.cd-card img { width: 446.24%; height: 509.78%; left: -121.61%; top: -336.79%; }
-.tape-card img { width: 422.86%; height: 509.78%; left: -214.05%; top: -336.79%; }
-.book-card img { width: 433.18%; height: 509.78%; left: -325.86%; top: -336.79%; }
+.vinyl-card img { --crop-center-x: 14.2%; width: 411.12%; height: 509.78%; left: -8.34%; top: -336.79%; }
+.cd-card img { --crop-center-x: 38.5%; width: 446.24%; height: 509.78%; left: -121.61%; top: -336.79%; }
+.tape-card img { --crop-center-x: 62.5%; width: 422.86%; height: 509.78%; left: -214.05%; top: -336.79%; }
+.book-card img { --crop-center-x: 86.8%; width: 433.18%; height: 509.78%; left: -325.86%; top: -336.79%; }
 .category-card:hover { transform: translateY(-4px); }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .category-card { clip-path: inset(0 round 12px); }
+  :root:not([data-theme="light"]) .category-card img { transform: scale(1.04); transform-origin: var(--crop-center-x) 75.9%; }
+}
+:root[data-theme="dark"] .category-card { clip-path: inset(0 round 12px); }
+:root[data-theme="dark"] .category-card img { transform: scale(1.04); transform-origin: var(--crop-center-x) 75.9%; }
 
 .about { scroll-margin-top: 70px; display: grid; grid-template-columns: minmax(280px, .9fr) minmax(360px, 1.1fr); gap: clamp(32px, 5vw, 76px); padding: clamp(48px, 6vw, 84px) 7vw; background: var(--white); border-block: 1px solid var(--line); }
 .about-heading { align-self: start; position: sticky; top: 98px; }
@@ -146,6 +153,7 @@ h1 em { color: var(--gold); font-style: normal; }
 .about-copy p { margin: 0 0 24px; }
 .about-copy p:first-child { color: var(--ink); font-size: 1.15em; font-weight: 800; }
 .about-signature { color: var(--ink); font-weight: 700; }
+.detail-name-details { min-height: 0; margin-top: 4px; }
 
 .catalog-section { padding: 64px 4vw; }
 .catalog-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 30px; }

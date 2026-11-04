@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=18">
-  <script src="admin.js?v=19" defer></script>
+  <link rel="stylesheet" href="admin.css?v=19">
+  <script src="admin.js?v=20" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -76,9 +76,26 @@
       <article><span>Скрыто</span><strong id="stat-hidden">0</strong></article>
     </section>
 
+    <section class="about-card" aria-labelledby="about-editor-title">
+      <div>
+        <p class="step-number">4</p>
+        <h2 id="about-editor-title">Текст «О нас»</h2>
+        <p>Здесь можно изменить заголовок и весь текст блока. Пустая строка в большом поле начинает новый абзац.</p>
+      </div>
+      <div class="about-editor">
+        <label>Метка раздела<input id="about-editor-eyebrow" type="text" value="О нас"></label>
+        <label>Крупный заголовок<textarea id="about-editor-heading" rows="3"></textarea></label>
+        <label>Текст блока<textarea id="about-editor-paragraphs" rows="12"></textarea></label>
+        <div class="about-editor-actions">
+          <p id="about-editor-status" class="field-status" role="status" aria-live="polite">Для публикации подключите GitHub в первом блоке.</p>
+          <button class="primary-button" id="save-about" type="button" disabled>Опубликовать текст</button>
+        </div>
+      </div>
+    </section>
+
     <section class="catalog-admin" aria-labelledby="catalog-admin-title">
       <div class="section-head">
-        <div><p class="step-number">4</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
+        <div><p class="step-number">5</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
         <div class="head-actions"><button class="secondary-button" id="refresh-data" type="button">Обновить список</button><button class="primary-button" id="publish-changes" type="button" disabled>Опубликовать изменения</button></div>
       </div>
       <div class="admin-toolbar">

@@ -17,11 +17,11 @@
     const savedTheme = localStorage.getItem('soyuz-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
   </script>
-  <link rel="stylesheet" href="styles.css?v=34">
+  <link rel="stylesheet" href="styles.css?v=35">
   <script src="auth-config.js?v=31"></script>
   <script src="auth.js?v=34" defer></script>
   <script src="external-browser.js?v=31" defer></script>
-  <script src="app.js?v=31" defer></script>
+  <script src="app.js?v=32" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -92,10 +92,10 @@
 
     <section class="about" id="about" aria-labelledby="about-title">
       <div class="about-heading">
-        <p class="eyebrow">О нас</p>
+        <p class="eyebrow" id="about-eyebrow">О нас</p>
         <h2 id="about-title">🖤 Привет!<br>Мы - <em>SOYUZ MUSIC.</em></h2>
       </div>
-      <div class="about-copy">
+      <div class="about-copy" id="about-copy">
         <p>Если коротко: мы любим музыку.</p>
         <p>Не по алгоритмам, не по трендам, а по-настоящему. И делаем всё, чтобы эта любовь жила в пластинках, дисках, кассетах и ваших полках.</p>
         <p>Мы на рынке уже больше 20 лет. Через наши руки прошли редкие тиражи, первые релизы культовых групп, эксклюзивы, которые люди искали годами. А ещё — десятки тысяч заказов, сотни благодарностей и бесконечно тёплая связь с теми, кто ценит музыку так же, как и мы.</p>

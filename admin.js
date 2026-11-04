@@ -2,6 +2,7 @@ const OWNER = 'varvara9911';
 const REPO = 'soyuz-music-store';
 const BRANCH = 'main';
 const OVERRIDES_PATH = 'admin-overrides.json';
+const SITE_CONTENT_PATH = 'site-content.json';
 const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
 const SYNC_WORKFLOW_URL = `https://github.com/${OWNER}/${REPO}/actions/workflows/sync-ozon.yml`;
 
@@ -14,6 +15,9 @@ let visibleCount = 100;
 let editingId = '';
 let addingProduct = false;
 let selectedExcelFiles = [];
+let siteContent = defaultSiteContent();
+let siteContentSha = '';
+let aboutDirty = false;
 
 const el = selector => document.querySelector(selector);
 const safe = value => String(value ?? '').replace(/[&<>'"]/g, character => ({
@@ -22,8 +26,61 @@ const safe = value => String(value ?? '').replace(/[&<>'"]/g, character => ({
 const normalize = value => String(value || '').toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/gi, ' ').trim();
 const money = value => `${new Intl.NumberFormat('ru-RU').format(Number(value) || 0)} ₽`;
 
+function splitDisplayText(value) {
+  const text = String(value || '').trim();
+  const bracket = text.indexOf('(');
+  if (bracket <= 0) return { main: text, details: '' };
+  return { main: text.slice(0, bracket).trim(), details: text.slice(bracket).trim() };
+}
+
+function productDisplayName(product) {
+  const artist = splitDisplayText(product.artist);
+  const title = splitDisplayText(product.title);
+  return {
+    artist: artist.main || 'Без артиста',
+    title: title.main,
+    details: [artist.details, title.details].filter(Boolean).join(' ')
+  };
+}
+
 function emptyOverrides() {
   return { version: 1, updatedAt: '', items: {}, added: [], deleted: [] };
+}
+
+function defaultSiteContent() {
+  return {
+    about: {
+      eyebrow: 'О нас',
+      heading: '🖤 Привет!\nМы - SOYUZ MUSIC.',
+      paragraphs: []
+    }
+  };
+}
+
+function fillAboutEditor() {
+  const about = siteContent.about || defaultSiteContent().about;
+  el('#about-editor-eyebrow').value = about.eyebrow || 'О нас';
+  el('#about-editor-heading').value = about.heading || '';
+  el('#about-editor-paragraphs').value = (about.paragraphs || []).join('\n\n');
+  aboutDirty = false;
+  el('#save-about').disabled = true;
+}
+
+function readAboutEditor() {
+  return {
+    eyebrow: el('#about-editor-eyebrow').value.trim() || 'О нас',
+    heading: el('#about-editor-heading').value.trim(),
+    paragraphs: el('#about-editor-paragraphs').value
+      .split(/\r?\n\s*\r?\n/)
+      .map(value => value.trim())
+      .filter(Boolean)
+  };
+}
+
+function setAboutStatus(text, type = '') {
+  const node = el('#about-editor-status');
+  node.textContent = text;
+  node.className = `field-status ${type}`;
 }
 
 function baseMap() {
@@ -106,6 +163,7 @@ function filteredRows() {
 
 function productRow(product, hidden = false) {
   const status = statusFor(product, hidden);
+  const displayName = productDisplayName(product);
   const image = product.image
     ? `<img src="${safe(product.image)}" alt="" loading="lazy">`
     : '<div class="admin-image-placeholder">Нет фото</div>';
@@ -116,7 +174,7 @@ function productRow(product, hidden = false) {
        <button class="danger" type="button" data-hide="${safe(product.id)}">Скрыть</button>`;
   return `<article class="admin-product" data-admin-id="${safe(product.id)}">
     ${image}
-    <div><h3>${safe(product.artist || 'Без артиста')} — ${safe(product.title || 'Без названия')}</h3><p>${safe(product.id)}</p><span class="admin-status ${status.key}">${status.label}</span></div>
+    <div><h3>${safe(displayName.artist)}${displayName.title ? ` — ${safe(displayName.title)}` : ''}</h3>${displayName.details ? `<p class="admin-product-name-details">${safe(displayName.details)}</p>` : ''}<p>${safe(product.id)}</p><span class="admin-status ${status.key}">${status.label}</span></div>
     <div><small>Категория</small><p>${safe({ vinyl:'Винил', cd:'CD', tape:'Кассета', book:'Книга', movie:'Фильм' }[product.category] || product.category)}</p></div>
     <div><small>Цена</small><p class="admin-price">${money(product.price)}</p></div>
     <div><small>Остаток</small><p>${Number(product.stock) || 0}</p></div>
@@ -141,9 +199,10 @@ function render() {
 async function loadData() {
   el('#product-admin-list').innerHTML = '<p class="loading">Загружаем каталог…</p>';
   try {
-    const [productsResponse, overridesResponse] = await Promise.all([
+    const [productsResponse, overridesResponse, siteContentResponse] = await Promise.all([
       fetch(`products.json?t=${Date.now()}`, { cache: 'no-store' }),
-      fetch(`${OVERRIDES_PATH}?t=${Date.now()}`, { cache: 'no-store' })
+      fetch(`${OVERRIDES_PATH}?t=${Date.now()}`, { cache: 'no-store' }),
+      fetch(`${SITE_CONTENT_PATH}?t=${Date.now()}`, { cache: 'no-store' })
     ]);
     if (!productsResponse.ok) throw new Error('Не удалось загрузить products.json');
     baseProducts = await productsResponse.json();
@@ -151,6 +210,8 @@ async function loadData() {
     overrides.items ||= {};
     overrides.added ||= [];
     overrides.deleted ||= [];
+    siteContent = siteContentResponse.ok ? await siteContentResponse.json() : defaultSiteContent();
+    fillAboutEditor();
     visibleCount = 100;
     render();
   } catch (error) {
@@ -190,13 +251,18 @@ el('#connect-github').addEventListener('click', async () => {
   el('#connect-github').disabled = true;
   setGithubStatus('Проверяем доступ…');
   try {
-    const file = await github(`/contents/${OVERRIDES_PATH}?ref=${BRANCH}`);
+    const [file, contentFile] = await Promise.all([
+      github(`/contents/${OVERRIDES_PATH}?ref=${BRANCH}`),
+      github(`/contents/${SITE_CONTENT_PATH}?ref=${BRANCH}`)
+    ]);
     overridesSha = file.sha;
+    siteContentSha = contentFile.sha;
     el('#github-token').value = '';
     el('#connection-badge').textContent = 'GitHub подключён';
     el('#connection-badge').classList.add('connected');
     setGithubStatus('Подключено. Токен хранится только до закрытия вкладки.', 'success');
     el('#publish-changes').disabled = !dirty;
+    el('#save-about').disabled = !aboutDirty;
     el('#upload-excel').disabled = !selectedExcelFiles.length;
     el('#sync-now').disabled = false;
     el('#sync-status').textContent = 'Готово к запуску. Обычно обновление занимает 1–5 минут.';
@@ -276,6 +342,42 @@ function utf8Base64(text) {
   }
   return btoa(binary);
 }
+
+['#about-editor-eyebrow', '#about-editor-heading', '#about-editor-paragraphs'].forEach(selector => {
+  el(selector).addEventListener('input', () => {
+    aboutDirty = true;
+    el('#save-about').disabled = !githubToken;
+    setAboutStatus(githubToken ? 'Есть неопубликованные изменения.' : 'Изменения сохранены в форме. Для публикации подключите GitHub в первом блоке.');
+  });
+});
+
+el('#save-about').addEventListener('click', async () => {
+  if (!githubToken || !aboutDirty) return;
+  const button = el('#save-about');
+  button.disabled = true;
+  button.textContent = 'Публикуем…';
+  try {
+    siteContent = { ...siteContent, about: readAboutEditor() };
+    const result = await github(`/contents/${SITE_CONTENT_PATH}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        message: 'Обновить текст О нас из админки',
+        content: utf8Base64(`${JSON.stringify(siteContent, null, 2)}\n`),
+        sha: siteContentSha,
+        branch: BRANCH
+      })
+    });
+    siteContentSha = result.content.sha;
+    aboutDirty = false;
+    setAboutStatus('Текст опубликован. На сайте он обновится через 1–2 минуты.', 'success');
+    toast('Текст «О нас» опубликован');
+  } catch (error) {
+    setAboutStatus(`Не удалось опубликовать: ${error.message}`, 'error');
+    button.disabled = false;
+  } finally {
+    button.textContent = 'Опубликовать текст';
+  }
+});
 
 el('#publish-changes').addEventListener('click', async () => {
   if (!githubToken || !dirty) return;
@@ -529,7 +631,7 @@ el('#upload-excel').addEventListener('click', async () => {
 });
 
 window.addEventListener('beforeunload', event => {
-  if (!dirty) return;
+  if (!dirty && !aboutDirty) return;
   event.preventDefault();
   event.returnValue = '';
 });

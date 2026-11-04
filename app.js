@@ -68,6 +68,16 @@ function splitProductTitle(value) {
   };
 }
 
+function productDisplayName(product) {
+  const artist = splitProductTitle(product.artist);
+  const title = splitProductTitle(product.title);
+  return {
+    artist: artist.main,
+    title: title.main,
+    details: [artist.details, title.details].filter(Boolean).join(' ')
+  };
+}
+
 const artistGroup = artist => {
   const firstLetter = normalizeSearchText(artist).charAt(0).toLocaleUpperCase('ru') || '#';
   return /[A-ZА-Я0-9]/.test(firstLetter) ? firstLetter : '#';
@@ -176,18 +186,18 @@ function productCard(product) {
     ? `<img class="cover-image" src="${safe(product.image)}" alt="" loading="lazy" decoding="async">`
     : '';
   const carrierLabel = { vinyl: 'LP', cd: 'CD', tape: 'MC', book: 'Книга', movie: 'Фильм' }[product.category] || product.format || product.detail || '';
-  const title = splitProductTitle(product.title);
+  const displayName = productDisplayName(product);
   const badge = product.badge && product.badge !== 'Новинка'
     ? product.badge
     : (isRecentlyPublished(product.publishedAt) ? 'Новинка' : '');
-  return `<article class="product-card" data-category="${safe(product.category)}" data-product="${safe(product.id)}" tabindex="0" aria-label="Подробнее: ${safe(product.artist)} — ${safe(product.title)}">
+  return `<article class="product-card" data-category="${safe(product.category)}" data-product="${safe(product.id)}" tabindex="0" aria-label="Подробнее: ${safe(displayName.artist)} — ${safe(displayName.title)}">
     <div class="cover ${product.image ? 'has-image' : ''}" style="--cover:${categoryColor[product.category]}" data-mark="${safe(product.artist)}">
       ${cover}
       ${badge ? `<span class="badge">${safe(badge)}</span>` : ''}
     </div>
     <div class="product-info">
-      <div class="product-title-row"><div class="product-title-copy"><h3>${safe(product.artist)}</h3>${title.main ? `<h4>${safe(title.main)}</h4>` : ''}</div><button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button></div>
-      ${title.details ? `<p class="album-details">${safe(title.details)}</p>` : '<p class="album-details empty" aria-hidden="true"></p>'}
+      <div class="product-title-row"><div class="product-title-copy"><h3>${safe(displayName.artist)}</h3>${displayName.title ? `<h4>${safe(displayName.title)}</h4>` : ''}</div><button class="favorite-button ${favorite ? 'active' : ''}" type="button" data-favorite="${safe(product.id)}" aria-label="${favorite ? 'Убрать из избранного' : 'Добавить в избранное'}">${favorite ? '♥' : '♡'}</button></div>
+      ${displayName.details ? `<p class="album-details">${safe(displayName.details)}</p>` : '<p class="album-details empty" aria-hidden="true"></p>'}
       ${carrierLabel ? `<div class="chips"><span>${safe(carrierLabel)}</span></div>` : ''}
       <div class="price-row"><span class="price">${money(product.price)}</span><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
       <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"${waiting ? ' data-waiting="true" aria-pressed="true"' : ''}`}>${available ? 'В корзину' : (waiting ? '✓ В листе ожидания' : 'Сообщить о поступлении')}</button>
@@ -206,16 +216,18 @@ function openProduct(product) {
   const images = (product.images?.length ? product.images : [product.image]).filter(Boolean);
   const specs = Object.entries(product.specs || {});
   const description = descriptionHtml(product.description);
+  const displayName = productDisplayName(product);
   const defaultTab = description ? 'description' : 'specs';
   el('#product-detail').innerHTML = `
     <div class="detail-gallery">
-      ${images[0] ? `<img class="detail-main-image" id="detail-main-image" src="${safe(images[0])}" alt="${safe(product.title)}">` : '<div class="detail-image-placeholder">Нет изображения</div>'}
+      ${images[0] ? `<img class="detail-main-image" id="detail-main-image" src="${safe(images[0])}" alt="${safe(displayName.title || displayName.artist)}">` : '<div class="detail-image-placeholder">Нет изображения</div>'}
       ${images.length > 1 ? `<div class="detail-thumbnails">${images.slice(0, 10).map((image, index) => `<button type="button" data-detail-image="${safe(image)}" aria-label="Показать фото ${index + 1}"><img src="${safe(image)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
     </div>
     <div class="detail-content">
       <p class="eyebrow">${safe(categoryName[product.category] || 'Товар')}</p>
-      <h2>${safe(product.artist)}</h2>
-      <p class="detail-title">${safe(product.title)}</p>
+      <h2>${safe(displayName.artist)}</h2>
+      ${displayName.title ? `<p class="detail-title">${safe(displayName.title)}</p>` : ''}
+      ${displayName.details ? `<p class="album-details detail-name-details">${safe(displayName.details)}</p>` : ''}
       <div class="detail-price-row"><strong>${money(product.price)}</strong><span class="stock ${available ? '' : 'out'}">${available ? '✓ В продаже' : 'Нет в наличии'}</span></div>
       <div class="detail-actions">
         <button class="buy-button" type="button" ${available ? `data-buy="${safe(product.id)}"` : `data-waitlist="${safe(product.id)}"${waiting ? ' data-waiting="true" aria-pressed="true"' : ''}`}>${available ? 'В корзину' : (waiting ? '✓ В листе ожидания' : 'Сообщить о поступлении')}</button>
@@ -515,7 +527,9 @@ function renderCart() {
   const lines = Object.entries(counts).map(([id, count]) => {
     const product = products.find(item => item.id === id);
     if (!product) return '';
-    return `<div class="cart-line"><span><b>${safe(product.artist)}</b><br><small>${safe(product.title)}</small></span><span>${count} × ${money(product.price)}</span><button type="button" data-remove="${safe(id)}">Удалить</button></div>`;
+    const displayName = productDisplayName(product);
+    const secondary = [displayName.title, displayName.details].filter(Boolean).join(' ');
+    return `<div class="cart-line"><span><b>${safe(displayName.artist)}</b>${secondary ? `<br><small>${safe(secondary)}</small>` : ''}</span><span>${count} × ${money(product.price)}</span><button type="button" data-remove="${safe(id)}">Удалить</button></div>`;
   });
   el('#cart-items').innerHTML = lines.join('') || '<p>Корзина пока пуста.</p>';
   el('#cart-total').textContent = money(state.cart.reduce((sum, id) => sum + (products.find(product => product.id === id)?.price || 0), 0));
@@ -620,4 +634,46 @@ async function loadProducts() {
   }
 }
 
+async function loadSiteContent() {
+  try {
+    const response = await fetch(`site-content.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) return;
+    const content = await response.json();
+    const about = content.about || {};
+    if (about.eyebrow) el('#about-eyebrow').textContent = about.eyebrow;
+    if (about.heading) {
+      const heading = el('#about-title');
+      heading.textContent = '';
+      String(about.heading).split(/\r?\n/).forEach((line, index, lines) => {
+        const match = line.match(/^(.*?)(SOYUZ MUSIC\.?)$/i);
+        if (match) {
+          heading.append(document.createTextNode(match[1]));
+          const emphasis = document.createElement('em');
+          emphasis.textContent = match[2];
+          heading.append(emphasis);
+        } else {
+          heading.append(document.createTextNode(line));
+        }
+        if (index < lines.length - 1) heading.append(document.createElement('br'));
+      });
+    }
+    if (Array.isArray(about.paragraphs) && about.paragraphs.length) {
+      const copy = el('#about-copy');
+      copy.textContent = '';
+      about.paragraphs.forEach((text, index) => {
+        const paragraph = document.createElement('p');
+        if (index === about.paragraphs.length - 1) paragraph.className = 'about-signature';
+        String(text).split(/\r?\n/).forEach((line, lineIndex, lines) => {
+          paragraph.append(document.createTextNode(line));
+          if (lineIndex < lines.length - 1) paragraph.append(document.createElement('br'));
+        });
+        copy.append(paragraph);
+      });
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+loadSiteContent();
 loadProducts();
