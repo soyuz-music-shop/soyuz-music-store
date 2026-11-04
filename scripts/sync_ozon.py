@@ -13,9 +13,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "products.json"
+AVITO_REPORT = ROOT / "avito-price-report.json"
 API_ROOT = "https://api-seller.ozon.ru"
 CLIENT_ID = os.environ.get("OZON_CLIENT_ID", "")
 API_KEY = os.environ.get("OZON_API_KEY", "")
+AVITO_API_ROOT = "https://api.avito.ru"
+AVITO_CLIENT_ID = os.environ.get("AVITO_CLIENT_ID", "")
+AVITO_CLIENT_SECRET = os.environ.get("AVITO_CLIENT_SECRET", "")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
@@ -305,6 +309,162 @@ def number(value):
         return 0
 
 
+def normalized_listing_text(value, strip_details=False):
+    value = text(value).casefold().replace("ё", "е")
+    if strip_details:
+        value = re.sub(r"\([^)]*\)", " ", value)
+    return re.sub(r"[^a-zа-я0-9]+", " ", value, flags=re.I).strip()
+
+
+def product_listing_names(product, strip_details=False):
+    artist = text(product.get("artist"))
+    title = text(product.get("title"))
+    candidates = [f"{artist} {title}", f"{artist}. {title}", title]
+    return {
+        normalized_listing_text(candidate, strip_details=strip_details)
+        for candidate in candidates
+        if normalized_listing_text(candidate, strip_details=strip_details)
+    }
+
+
+def avito_access_token():
+    payload = urllib.parse.urlencode({
+        "grant_type": "client_credentials",
+        "client_id": AVITO_CLIENT_ID,
+        "client_secret": AVITO_CLIENT_SECRET,
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        AVITO_API_ROOT + "/token",
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            result = json.load(response)
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Avito token: HTTP {error.code}: {body[:1000]}") from error
+    token = text(result.get("access_token"))
+    if not token:
+        raise RuntimeError("Avito token: access_token is missing")
+    return token
+
+
+def avito_items(access_token):
+    items = []
+    page = 1
+    per_page = 100
+    headers = {"Authorization": f"Bearer {access_token}"}
+    while True:
+        query = urllib.parse.urlencode({"page": page, "per_page": per_page})
+        result = json_request(
+            f"{AVITO_API_ROOT}/core/v1/items?{query}",
+            headers=headers,
+        ) or {}
+        batch = result.get("resources") or result.get("items") or []
+        items.extend(
+            item for item in batch
+            if text(item.get("status")).casefold() in ("", "active")
+        )
+        meta = result.get("meta") or {}
+        pages = number(meta.get("pages") or meta.get("page_count"))
+        if not batch or len(batch) < per_page or (pages and page >= pages):
+            break
+        page += 1
+    return items
+
+
+def apply_avito_prices(products, listings):
+    full_names = {}
+    base_names = {}
+    for index, product in enumerate(products):
+        for name in product_listing_names(product):
+            full_names.setdefault(name, []).append(index)
+        for name in product_listing_names(product, strip_details=True):
+            base_names.setdefault(name, []).append(index)
+
+    listing_full_names = {}
+    listing_base_names = {}
+    for listing in listings:
+        full = normalized_listing_text(listing.get("title"))
+        base = normalized_listing_text(listing.get("title"), strip_details=True)
+        if full:
+            listing_full_names.setdefault(full, []).append(listing)
+        if base:
+            listing_base_names.setdefault(base, []).append(listing)
+
+    matched = 0
+    for product in products:
+        ozon_price = number(product.get("price"))
+        product["ozonPrice"] = ozon_price
+        product["priceSource"] = "ozon"
+        for key in ("avitoPrice", "_avitoItemId", "_avitoUpdatedAt"):
+            product.pop(key, None)
+
+        candidates = []
+        specs = product.get("specs") or {}
+        explicit = text(
+            product.get("avitoId")
+            or specs.get("Avito ID")
+            or specs.get("ID Avito")
+            or specs.get("ID объявления Avito")
+        )
+        if explicit:
+            candidates = [listing for listing in listings if text(listing.get("id")) == explicit]
+        if not candidates:
+            for name in product_listing_names(product):
+                if len(full_names.get(name, [])) == 1 and len(listing_full_names.get(name, [])) == 1:
+                    candidates = listing_full_names[name]
+                    break
+        if not candidates:
+            for name in product_listing_names(product, strip_details=True):
+                if len(base_names.get(name, [])) == 1 and len(listing_base_names.get(name, [])) == 1:
+                    candidates = listing_base_names[name]
+                    break
+        if len(candidates) != 1:
+            continue
+        listing = candidates[0]
+        avito_price = number(listing.get("price"))
+        if avito_price <= 0:
+            continue
+        product["price"] = avito_price
+        product["avitoPrice"] = avito_price
+        product["priceSource"] = "avito"
+        product["_avitoItemId"] = text(listing.get("id"))
+        product["_avitoUpdatedAt"] = datetime.now(timezone.utc).isoformat()
+        matched += 1
+    return matched
+
+
+def write_avito_report(products, status, listings_count=0, error=""):
+    unmatched = [
+        {
+            "id": text(product.get("id")),
+            "artist": text(product.get("artist")),
+            "title": text(product.get("title")),
+            "ozonPrice": number(product.get("ozonPrice") or product.get("price")),
+            "available": product.get("available") is not False,
+        }
+        for product in products
+        if product.get("priceSource") != "avito"
+    ]
+    matched = sum(product.get("priceSource") == "avito" for product in products)
+    report = {
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+        "status": status,
+        "listings": listings_count,
+        "matched": matched,
+        "unmatchedCount": len(unmatched),
+        "error": text(error),
+        "unmatched": unmatched,
+    }
+    AVITO_REPORT.write_text(
+        json.dumps(report, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
+
 def clean_html(value):
     source = text(value)
     if not source:
@@ -583,6 +743,28 @@ def main():
         by_offer[offer_id] = updated
 
     products = list(by_offer.values())
+    avito_matched = 0
+    avito_status = "not_configured"
+    avito_listings_count = 0
+    avito_error = ""
+    if AVITO_CLIENT_ID and AVITO_CLIENT_SECRET:
+        try:
+            listings = avito_items(avito_access_token())
+            avito_listings_count = len(listings)
+            avito_matched = apply_avito_prices(products, listings)
+            avito_status = "success"
+            print(f"Avito prices: {avito_matched} matched from {len(listings)} active listings")
+        except Exception as error:
+            # Avito is an optional price source. Ozon prices remain the safe fallback.
+            apply_avito_prices(products, [])
+            avito_status = "error"
+            avito_error = text(error)
+            print(f"Avito prices skipped; Ozon fallback is active: {error}")
+    else:
+        apply_avito_prices(products, [])
+        print("Avito prices are not configured; Ozon fallback is active")
+    write_avito_report(products, avito_status, avito_listings_count, avito_error)
+    by_offer = {text(product.get("id")): product for product in products if text(product.get("id"))}
     products.sort(key=lambda product: product.get("publishedAt", ""), reverse=True)
     CATALOG.write_text(
         json.dumps(products, ensure_ascii=False, separators=(",", ":")),
@@ -592,7 +774,8 @@ def main():
     notify_newsletter(by_offer)
     print(
         f"Ozon sync: {len(info)} API products, {added} added, {changed} changed, "
-        f"{len(products)} total at {datetime.now(timezone.utc).isoformat()}"
+        f"{len(products)} total, {avito_matched} Avito prices at "
+        f"{datetime.now(timezone.utc).isoformat()}"
     )
 
 

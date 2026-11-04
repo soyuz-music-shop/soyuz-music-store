@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=19">
-  <script src="admin.js?v=20" defer></script>
+  <link rel="stylesheet" href="admin.css?v=21">
+  <script src="admin.js?v=23" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -30,20 +30,36 @@
       <div>
         <p class="step-number">1</p>
         <h2 id="github-title">Доступ для ручного редактирования</h2>
-        <p>Автоматическое обновление каталога уже подключено. Личный токен нужен только для публикации ручных правок и загрузки Excel прямо с этой страницы. Он остаётся в памяти вкладки и исчезает после её закрытия.</p>
+        <p>Автоматическое обновление каталога уже подключено. Личный токен нужен для публикации ручных правок, запуска синхронизации и безопасной замены API-ключей. Он хранится только в этой вкладке браузера и исчезает после её закрытия.</p>
       </div>
       <div class="token-form">
         <label for="github-token">GitHub token</label>
-        <div><input id="github-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button class="primary-button" id="connect-github" type="button">Подключить</button></div>
-        <p id="github-status" class="field-status" role="status" aria-live="polite">Для ручных правок нужен fine-grained token с доступом Contents: Read and write к репозиторию.</p>
+        <div><input id="github-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button class="primary-button" id="connect-github" type="button">Подключить</button><button class="secondary-button" id="disconnect-github" type="button" hidden>Отключить</button></div>
+        <p id="github-status" class="field-status" role="status" aria-live="polite">Нужен fine-grained token с доступами Contents и Actions: Read and write к этому репозиторию.</p>
+      </div>
+    </section>
+
+    <section class="api-card" aria-labelledby="avito-api-title">
+      <div>
+        <p class="step-number">2</p>
+        <h2 id="avito-api-title">Цены из каталога Avito</h2>
+        <p>Введите Client ID и Client Secret из кабинета Avito. Значения шифруются в браузере и сохраняются прямо в GitHub Secrets — сама админка их не показывает и не хранит.</p>
+      </div>
+      <div class="api-secret-form">
+        <label>Avito Client ID<input id="avito-client-id" type="password" autocomplete="off" spellcheck="false" placeholder="Вставьте Client ID"></label>
+        <label>Avito Client Secret<input id="avito-client-secret" type="password" autocomplete="off" spellcheck="false" placeholder="Вставьте Client Secret"></label>
+        <div class="api-secret-actions">
+          <p id="avito-secret-status" class="field-status" role="status" aria-live="polite">Подключите GitHub в первом блоке, затем сохраните оба ключа.</p>
+          <button class="primary-button" id="save-avito-secrets" type="button" disabled>Сохранить ключи Avito</button>
+        </div>
       </div>
     </section>
 
     <section class="sync-card" aria-labelledby="sync-title">
       <div>
-        <p class="step-number">2</p>
-        <h2 id="sync-title">Обновление каталога из Ozon</h2>
-        <p>Запустите синхронизацию вручную, чтобы сейчас проверить новые позиции, остатки, цены, описания, характеристики и фотографии.</p>
+        <p class="step-number">3</p>
+        <h2 id="sync-title">Обновление каталога из Ozon и Avito</h2>
+        <p>Ozon обновляет позиции, остатки, описания, характеристики и фотографии. Цена берётся из Avito, если позиция там найдена однозначно; иначе остаётся цена Ozon.</p>
       </div>
       <div class="sync-actions">
         <button class="primary-button" id="sync-now" type="button">Обновить сейчас</button>
@@ -51,9 +67,19 @@
       </div>
     </section>
 
+    <section class="avito-report-card" aria-labelledby="avito-report-title">
+      <div class="section-head">
+        <div><p class="step-number">Отчёт цен</p><h2 id="avito-report-title">Не найдено в Avito</h2></div>
+        <label class="report-search"><span>Поиск в отчёте</span><input id="avito-report-search" type="search" placeholder="Артист, название или артикул"></label>
+      </div>
+      <p id="avito-report-summary" class="report-summary">Отчёт появится после первой синхронизации с ключами Avito.</p>
+      <div id="avito-unmatched-list" class="avito-unmatched-list"></div>
+      <button class="secondary-button report-more" id="avito-report-more" type="button" hidden>Показать ещё</button>
+    </section>
+
     <section class="excel-card" aria-labelledby="excel-title">
       <div>
-        <p class="step-number">3</p>
+        <p class="step-number">4</p>
         <h2 id="excel-title">Загрузка товаров из Excel Ozon</h2>
         <p>Подойдут ваши шаблоны «Кино, музыка, видеоигры, софт» и «Печатная книга». Можно выбрать оба файла сразу.</p>
       </div>
@@ -78,7 +104,7 @@
 
     <section class="about-card" aria-labelledby="about-editor-title">
       <div>
-        <p class="step-number">4</p>
+        <p class="step-number">5</p>
         <h2 id="about-editor-title">Текст «О нас»</h2>
         <p>Здесь можно изменить заголовок и весь текст блока. Пустая строка в большом поле начинает новый абзац.</p>
       </div>
@@ -95,7 +121,7 @@
 
     <section class="catalog-admin" aria-labelledby="catalog-admin-title">
       <div class="section-head">
-        <div><p class="step-number">5</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
+        <div><p class="step-number">6</p><h2 id="catalog-admin-title">Карточки товаров</h2></div>
         <div class="head-actions"><button class="secondary-button" id="refresh-data" type="button">Обновить список</button><button class="primary-button" id="publish-changes" type="button" disabled>Опубликовать изменения</button></div>
       </div>
       <div class="admin-toolbar">

@@ -3,8 +3,10 @@ const REPO = 'soyuz-music-store';
 const BRANCH = 'main';
 const OVERRIDES_PATH = 'admin-overrides.json';
 const SITE_CONTENT_PATH = 'site-content.json';
+const AVITO_REPORT_PATH = 'avito-price-report.json';
 const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
 const SYNC_WORKFLOW_URL = `https://github.com/${OWNER}/${REPO}/actions/workflows/sync-ozon.yml`;
+const GITHUB_SESSION_KEY = 'soyuz-admin-github-token';
 
 let baseProducts = [];
 let overrides = emptyOverrides();
@@ -18,6 +20,9 @@ let selectedExcelFiles = [];
 let siteContent = defaultSiteContent();
 let siteContentSha = '';
 let aboutDirty = false;
+let avitoReport = null;
+let avitoReportVisibleCount = 200;
+let sodiumPromise = null;
 
 const el = selector => document.querySelector(selector);
 const safe = value => String(value ?? '').replace(/[&<>'"]/g, character => ({
@@ -194,15 +199,50 @@ function renderList() {
 function render() {
   renderStats();
   renderList();
+  renderAvitoReport();
+}
+
+function filteredAvitoUnmatched() {
+  const query = normalize(el('#avito-report-search').value);
+  const rows = avitoReport?.unmatched || [];
+  if (!query) return rows;
+  return rows.filter(row => normalize(`${row.id} ${row.artist} ${row.title}`).includes(query));
+}
+
+function renderAvitoReport() {
+  const summary = el('#avito-report-summary');
+  const list = el('#avito-unmatched-list');
+  const more = el('#avito-report-more');
+  if (!avitoReport) {
+    summary.textContent = 'Отчёт появится после первой синхронизации с ключами Avito.';
+    list.innerHTML = '';
+    more.hidden = true;
+    return;
+  }
+  const updated = avitoReport.updatedAt
+    ? new Intl.DateTimeFormat('ru-RU', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(avitoReport.updatedAt))
+    : '—';
+  const statusText = avitoReport.status === 'success'
+    ? `Найдено цен: ${avitoReport.matched || 0}. Не найдено: ${avitoReport.unmatchedCount || 0}. Объявлений Avito: ${avitoReport.listings || 0}.`
+    : avitoReport.status === 'error'
+      ? 'Avito был временно недоступен, поэтому сохранены цены Ozon.'
+      : 'Ключи Avito ещё не настроены, поэтому сохранены цены Ozon.';
+  const rows = filteredAvitoUnmatched();
+  summary.textContent = `${statusText} Последняя проверка: ${updated}.`;
+  list.innerHTML = rows.length
+    ? rows.slice(0, avitoReportVisibleCount).map(row => `<article class="avito-unmatched-row"><strong>${safe(row.id)}</strong><span>${safe([row.artist, row.title].filter(Boolean).join(' — '))}</span><b>${money(row.ozonPrice)}</b></article>`).join('')
+    : '<p class="empty-list">По этому запросу позиций нет.</p>';
+  more.hidden = avitoReportVisibleCount >= rows.length;
 }
 
 async function loadData() {
   el('#product-admin-list').innerHTML = '<p class="loading">Загружаем каталог…</p>';
   try {
-    const [productsResponse, overridesResponse, siteContentResponse] = await Promise.all([
+    const [productsResponse, overridesResponse, siteContentResponse, avitoReportResponse] = await Promise.all([
       fetch(`products.json?t=${Date.now()}`, { cache: 'no-store' }),
       fetch(`${OVERRIDES_PATH}?t=${Date.now()}`, { cache: 'no-store' }),
-      fetch(`${SITE_CONTENT_PATH}?t=${Date.now()}`, { cache: 'no-store' })
+      fetch(`${SITE_CONTENT_PATH}?t=${Date.now()}`, { cache: 'no-store' }),
+      fetch(`${AVITO_REPORT_PATH}?t=${Date.now()}`, { cache: 'no-store' })
     ]);
     if (!productsResponse.ok) throw new Error('Не удалось загрузить products.json');
     baseProducts = await productsResponse.json();
@@ -211,6 +251,8 @@ async function loadData() {
     overrides.added ||= [];
     overrides.deleted ||= [];
     siteContent = siteContentResponse.ok ? await siteContentResponse.json() : defaultSiteContent();
+    avitoReport = avitoReportResponse.ok ? await avitoReportResponse.json() : null;
+    avitoReportVisibleCount = 200;
     fillAboutEditor();
     visibleCount = 100;
     render();
@@ -241,15 +283,27 @@ function setGithubStatus(text, type = '') {
   node.className = `field-status ${type}`;
 }
 
-el('#connect-github').addEventListener('click', async () => {
-  const token = el('#github-token').value.trim();
+function setAvitoSecretStatus(text, type = '') {
+  const node = el('#avito-secret-status');
+  node.textContent = text;
+  node.className = `field-status ${type}`;
+}
+
+function setGithubConnected(connected) {
+  el('#disconnect-github').hidden = !connected;
+  el('#save-avito-secrets').disabled = !connected;
+  el('#connection-badge').textContent = connected ? 'GitHub подключён' : 'Автоматизация GitHub подключена';
+  el('#connection-badge').classList.toggle('connected', connected);
+}
+
+async function connectGithubToken(token, restored = false) {
   if (!token) {
     setGithubStatus('Вставьте GitHub token.', 'error');
-    return;
+    return false;
   }
   githubToken = token;
   el('#connect-github').disabled = true;
-  setGithubStatus('Проверяем доступ…');
+  setGithubStatus(restored ? 'Восстанавливаем подключение…' : 'Проверяем доступ…');
   try {
     const [file, contentFile] = await Promise.all([
       github(`/contents/${OVERRIDES_PATH}?ref=${BRANCH}`),
@@ -258,20 +312,87 @@ el('#connect-github').addEventListener('click', async () => {
     overridesSha = file.sha;
     siteContentSha = contentFile.sha;
     el('#github-token').value = '';
-    el('#connection-badge').textContent = 'GitHub подключён';
-    el('#connection-badge').classList.add('connected');
-    setGithubStatus('Подключено. Токен хранится только до закрытия вкладки.', 'success');
+    sessionStorage.setItem(GITHUB_SESSION_KEY, token);
+    setGithubConnected(true);
+    setGithubStatus('Подключено до закрытия этой вкладки.', 'success');
+    setAvitoSecretStatus('Можно сохранить или заменить ключи Avito.', 'success');
     el('#publish-changes').disabled = !dirty;
     el('#save-about').disabled = !aboutDirty;
     el('#upload-excel').disabled = !selectedExcelFiles.length;
     el('#sync-now').disabled = false;
     el('#sync-status').textContent = 'Готово к запуску. Обычно обновление занимает 1–5 минут.';
     el('#sync-status').className = 'field-status success';
+    return true;
   } catch (error) {
     githubToken = '';
+    sessionStorage.removeItem(GITHUB_SESSION_KEY);
+    setGithubConnected(false);
     setGithubStatus(`Не удалось подключиться: ${error.message}`, 'error');
+    return false;
   } finally {
     el('#connect-github').disabled = false;
+  }
+}
+
+el('#connect-github').addEventListener('click', async () => {
+  await connectGithubToken(el('#github-token').value.trim());
+});
+
+el('#disconnect-github').addEventListener('click', () => {
+  githubToken = '';
+  sessionStorage.removeItem(GITHUB_SESSION_KEY);
+  setGithubConnected(false);
+  el('#publish-changes').disabled = true;
+  el('#save-about').disabled = true;
+  el('#upload-excel').disabled = true;
+  el('#sync-now').disabled = false;
+  setGithubStatus('Отключено. Токен удалён из этой вкладки.', 'success');
+  setAvitoSecretStatus('Подключите GitHub в первом блоке, затем сохраните оба ключа.');
+});
+
+async function encryptGithubSecret(value, publicKey) {
+  sodiumPromise ||= import('https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.15/+esm')
+    .then(module => module.default || module);
+  const sodium = await sodiumPromise;
+  await sodium.ready;
+  const keyBytes = sodium.from_base64(publicKey, sodium.base64_variants.ORIGINAL);
+  const encrypted = sodium.crypto_box_seal(sodium.from_string(value), keyBytes);
+  return sodium.to_base64(encrypted, sodium.base64_variants.ORIGINAL);
+}
+
+async function saveGithubSecret(name, value, publicKey) {
+  const encryptedValue = await encryptGithubSecret(value, publicKey.key);
+  await github(`/actions/secrets/${encodeURIComponent(name)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ encrypted_value: encryptedValue, key_id: publicKey.key_id })
+  });
+}
+
+el('#save-avito-secrets').addEventListener('click', async () => {
+  if (!githubToken) return;
+  const clientId = el('#avito-client-id').value.trim();
+  const clientSecret = el('#avito-client-secret').value.trim();
+  if (!clientId || !clientSecret) {
+    setAvitoSecretStatus('Заполните оба поля: Client ID и Client Secret.', 'error');
+    return;
+  }
+  const button = el('#save-avito-secrets');
+  button.disabled = true;
+  button.textContent = 'Шифруем и сохраняем…';
+  setAvitoSecretStatus('Получаем открытый ключ GitHub…');
+  try {
+    const publicKey = await github('/actions/secrets/public-key');
+    await saveGithubSecret('AVITO_CLIENT_ID', clientId, publicKey);
+    await saveGithubSecret('AVITO_CLIENT_SECRET', clientSecret, publicKey);
+    el('#avito-client-id').value = '';
+    el('#avito-client-secret').value = '';
+    setAvitoSecretStatus('Ключи Avito сохранены. Нажмите «Обновить сейчас», чтобы применить цены.', 'success');
+    toast('Ключи Avito сохранены');
+  } catch (error) {
+    setAvitoSecretStatus(`Не удалось сохранить: ${error.message}`, 'error');
+  } finally {
+    button.disabled = !githubToken;
+    button.textContent = 'Сохранить ключи Avito';
   }
 });
 
@@ -544,6 +665,14 @@ el('#product-admin-list').addEventListener('click', event => {
 });
 el('#load-more-admin').addEventListener('click', () => { visibleCount += 100; renderList(); });
 el('#refresh-data').addEventListener('click', loadData);
+el('#avito-report-search').addEventListener('input', () => {
+  avitoReportVisibleCount = 200;
+  renderAvitoReport();
+});
+el('#avito-report-more').addEventListener('click', () => {
+  avitoReportVisibleCount += 200;
+  renderAvitoReport();
+});
 
 function setExcelFiles(files) {
   selectedExcelFiles = [...files].filter(file => file.name.toLowerCase().endsWith('.xlsx'));
@@ -638,3 +767,5 @@ window.addEventListener('beforeunload', event => {
 
 loadData();
 loadAutomationStatus();
+const savedGithubToken = sessionStorage.getItem(GITHUB_SESSION_KEY);
+if (savedGithubToken) connectGithubToken(savedGithubToken, true);

@@ -15,14 +15,27 @@ h1 { max-width:760px; margin:0; font-size:clamp(42px,6vw,78px); line-height:.95;
 .admin-intro p:last-child { color:var(--muted); }
 .connection-badge { flex:0 0 auto; border:1px solid var(--line); border-radius:99px; padding:9px 14px; color:var(--muted); font-size:12px; font-weight:800; }
 .connection-badge.connected { border-color:color-mix(in srgb,var(--green) 45%,var(--line)); color:var(--green); }
-.setup-card,.sync-card,.excel-card,.about-card,.catalog-admin { margin:18px 0; border:1px solid var(--line); border-radius:22px; padding:26px; background:var(--surface); box-shadow:var(--shadow); }
+.setup-card,.api-card,.sync-card,.avito-report-card,.excel-card,.about-card,.catalog-admin { margin:18px 0; border:1px solid var(--line); border-radius:22px; padding:26px; background:var(--surface); box-shadow:var(--shadow); }
 .setup-card { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(320px,1.2fr); gap:28px; align-items:end; }
+.api-card { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(320px,1.2fr); gap:28px; align-items:start; }
 .sync-card { display:grid; grid-template-columns:minmax(220px,1fr) minmax(260px,.7fr); gap:28px; align-items:center; }
-.setup-card h2,.sync-card h2,.excel-card h2,.about-card h2,.catalog-admin h2 { margin:0; font-size:28px; letter-spacing:-.035em; }
-.setup-card p,.sync-card p,.excel-card p,.about-card p { color:var(--muted); line-height:1.5; }
+.setup-card h2,.api-card h2,.sync-card h2,.avito-report-card h2,.excel-card h2,.about-card h2,.catalog-admin h2 { margin:0; font-size:28px; letter-spacing:-.035em; }
+.setup-card p,.api-card p,.sync-card p,.excel-card p,.about-card p { color:var(--muted); line-height:1.5; }
 .sync-actions { display:grid; gap:4px; justify-items:stretch; }
 .token-form label,.admin-toolbar label>span,.editor-grid label { color:var(--muted); font-size:11px; font-weight:700; }
 .token-form>div { display:flex; gap:8px; margin-top:7px; }
+.api-secret-form { display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+.api-secret-form label { display:grid; gap:6px; color:var(--muted); font-size:11px; font-weight:700; }
+.api-secret-actions { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.api-secret-actions .field-status { margin:0!important; }
+.report-search { width:min(380px,100%); display:grid; gap:6px; color:var(--muted); font-size:11px; font-weight:700; }
+.report-summary { margin:18px 0 12px; color:var(--muted); font-size:13px; }
+.avito-unmatched-list { display:grid; gap:6px; max-height:420px; overflow:auto; padding-right:5px; }
+.avito-unmatched-row { display:grid; grid-template-columns:minmax(120px,.7fr) minmax(220px,2fr) 120px; gap:12px; align-items:center; border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:var(--paper); }
+.avito-unmatched-row strong { font-size:12px; }
+.avito-unmatched-row span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:12px; }
+.avito-unmatched-row b { text-align:right; font-size:12px; }
+.report-more { display:block; margin:14px auto 0; }
 input,select,textarea { width:100%; border:1px solid var(--line); border-radius:11px; padding:11px 12px; background:var(--paper); color:var(--ink); outline:0; }
 input:focus,select:focus,textarea:focus { border-color:var(--gold); box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 17%,transparent); }
 .primary-button,.secondary-button { border:0; border-radius:999px; padding:11px 18px; font-weight:800; white-space:nowrap; }
@@ -90,5 +103,5 @@ input:focus,select:focus,textarea:focus { border-color:var(--gold); box-shadow:0
 .editor-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:18px; }
 .admin-toast { position:fixed; left:50%; bottom:28px; z-index:100; transform:translate(-50%,30px); opacity:0; pointer-events:none; border-radius:99px; padding:12px 18px; background:#111; color:#fff; transition:.2s; }
 .admin-toast.show { opacity:1; transform:translate(-50%,0); }
-@media (max-width:900px) { .setup-card,.sync-card,.excel-card,.about-card { grid-template-columns:1fr; } .excel-actions,.excel-card>.field-status { grid-column:1; } .stats { grid-template-columns:1fr 1fr; } .admin-toolbar { grid-template-columns:1fr 1fr; } .search-field { grid-column:1/-1; } .admin-product { grid-template-columns:58px 1fr auto; } .admin-product img,.admin-image-placeholder { width:58px;height:58px; } .admin-product>*:nth-child(3),.admin-product>*:nth-child(4),.admin-product>*:nth-child(5) { display:none; } }
-@media (max-width:600px) { .admin-shell { width:min(94vw,1320px); padding-top:28px; } .admin-intro { align-items:start; flex-direction:column; } h1 { font-size:44px; } .setup-card,.sync-card,.excel-card,.about-card,.catalog-admin { padding:18px; border-radius:17px; } .token-form>div,.excel-actions,.about-editor-actions,.section-head { align-items:stretch; flex-direction:column; } .stats { gap:8px; } .stats article { padding:15px; } .admin-toolbar { grid-template-columns:1fr; } .search-field { grid-column:auto; } .head-actions { width:100%; } .head-actions button { flex:1; } .admin-product { grid-template-columns:52px 1fr; } .admin-product img,.admin-image-placeholder { width:52px;height:52px; } .admin-product-actions { grid-column:1/-1; justify-content:flex-start; } .editor-grid { grid-template-columns:1fr; } .editor-grid .wide { grid-column:auto; } }
+@media (max-width:900px) { .setup-card,.api-card,.sync-card,.excel-card,.about-card { grid-template-columns:1fr; } .excel-actions,.excel-card>.field-status { grid-column:1; } .stats { grid-template-columns:1fr 1fr; } .admin-toolbar { grid-template-columns:1fr 1fr; } .search-field { grid-column:1/-1; } .admin-product { grid-template-columns:58px 1fr auto; } .admin-product img,.admin-image-placeholder { width:58px;height:58px; } .admin-product>*:nth-child(3),.admin-product>*:nth-child(4),.admin-product>*:nth-child(5) { display:none; } }
+@media (max-width:600px) { .admin-shell { width:min(94vw,1320px); padding-top:28px; } .admin-intro { align-items:start; flex-direction:column; } h1 { font-size:44px; } .setup-card,.api-card,.sync-card,.avito-report-card,.excel-card,.about-card,.catalog-admin { padding:18px; border-radius:17px; } .token-form>div,.excel-actions,.about-editor-actions,.api-secret-actions,.section-head { align-items:stretch; flex-direction:column; } .api-secret-form { grid-template-columns:1fr; } .api-secret-actions { grid-column:auto; } .avito-unmatched-row { grid-template-columns:1fr auto; } .avito-unmatched-row strong { grid-column:1/-1; } .stats { gap:8px; } .stats article { padding:15px; } .admin-toolbar { grid-template-columns:1fr; } .search-field { grid-column:auto; } .head-actions { width:100%; } .head-actions button { flex:1; } .admin-product { grid-template-columns:52px 1fr; } .admin-product img,.admin-image-placeholder { width:52px;height:52px; } .admin-product-actions { grid-column:1/-1; justify-content:flex-start; } .editor-grid { grid-template-columns:1fr; } .editor-grid .wide { grid-column:auto; } }
