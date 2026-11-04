@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css?v=21">
-  <script src="admin.js?v=23" defer></script>
+  <script src="admin.js?v=24" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -26,16 +26,16 @@
       <span class="connection-badge connected" id="connection-badge">Автоматизация GitHub подключена</span>
     </section>
 
-    <section class="setup-card" aria-labelledby="github-title">
+    <section class="setup-card" id="github-setup" aria-labelledby="github-title">
       <div>
         <p class="step-number">1</p>
-        <h2 id="github-title">Доступ для ручного редактирования</h2>
-        <p>Автоматическое обновление каталога уже подключено. Личный токен нужен для публикации ручных правок, запуска синхронизации и безопасной замены API-ключей. Он хранится только в этой вкладке браузера и исчезает после её закрытия.</p>
+        <h2 id="github-title">Первичное подключение админки</h2>
+        <p>Этот технический шаг нужен только один раз. После успешного подключения доступ сохранится в этом браузере, а блок исчезнет.</p>
       </div>
       <div class="token-form">
         <label for="github-token">GitHub token</label>
         <div><input id="github-token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button class="primary-button" id="connect-github" type="button">Подключить</button><button class="secondary-button" id="disconnect-github" type="button" hidden>Отключить</button></div>
-        <p id="github-status" class="field-status" role="status" aria-live="polite">Нужен fine-grained token с доступами Contents и Actions: Read and write к этому репозиторию.</p>
+        <p id="github-status" class="field-status" role="status" aria-live="polite">Подключите админку один раз — повторно вводить токен не придётся.</p>
       </div>
     </section>
 

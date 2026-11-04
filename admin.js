@@ -7,6 +7,7 @@ const AVITO_REPORT_PATH = 'avito-price-report.json';
 const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
 const SYNC_WORKFLOW_URL = `https://github.com/${OWNER}/${REPO}/actions/workflows/sync-ozon.yml`;
 const GITHUB_SESSION_KEY = 'soyuz-admin-github-token';
+const GITHUB_PERSISTENT_KEY = 'soyuz-admin-github-token-saved';
 
 let baseProducts = [];
 let overrides = emptyOverrides();
@@ -291,6 +292,7 @@ function setAvitoSecretStatus(text, type = '') {
 
 function setGithubConnected(connected) {
   el('#disconnect-github').hidden = !connected;
+  el('#github-setup').hidden = connected;
   el('#save-avito-secrets').disabled = !connected;
   el('#connection-badge').textContent = connected ? 'GitHub подключён' : 'Автоматизация GitHub подключена';
   el('#connection-badge').classList.toggle('connected', connected);
@@ -313,8 +315,9 @@ async function connectGithubToken(token, restored = false) {
     siteContentSha = contentFile.sha;
     el('#github-token').value = '';
     sessionStorage.setItem(GITHUB_SESSION_KEY, token);
+    localStorage.setItem(GITHUB_PERSISTENT_KEY, token);
     setGithubConnected(true);
-    setGithubStatus('Подключено до закрытия этой вкладки.', 'success');
+    setGithubStatus('Админка подключена. Повторно вводить токен не нужно.', 'success');
     setAvitoSecretStatus('Можно сохранить или заменить ключи Avito.', 'success');
     el('#publish-changes').disabled = !dirty;
     el('#save-about').disabled = !aboutDirty;
@@ -326,6 +329,7 @@ async function connectGithubToken(token, restored = false) {
   } catch (error) {
     githubToken = '';
     sessionStorage.removeItem(GITHUB_SESSION_KEY);
+    localStorage.removeItem(GITHUB_PERSISTENT_KEY);
     setGithubConnected(false);
     setGithubStatus(`Не удалось подключиться: ${error.message}`, 'error');
     return false;
@@ -341,12 +345,13 @@ el('#connect-github').addEventListener('click', async () => {
 el('#disconnect-github').addEventListener('click', () => {
   githubToken = '';
   sessionStorage.removeItem(GITHUB_SESSION_KEY);
+  localStorage.removeItem(GITHUB_PERSISTENT_KEY);
   setGithubConnected(false);
   el('#publish-changes').disabled = true;
   el('#save-about').disabled = true;
   el('#upload-excel').disabled = true;
   el('#sync-now').disabled = false;
-  setGithubStatus('Отключено. Токен удалён из этой вкладки.', 'success');
+  setGithubStatus('Отключено. Сохранённый доступ удалён из браузера.', 'success');
   setAvitoSecretStatus('Подключите GitHub в первом блоке, затем сохраните оба ключа.');
 });
 
@@ -767,5 +772,5 @@ window.addEventListener('beforeunload', event => {
 
 loadData();
 loadAutomationStatus();
-const savedGithubToken = sessionStorage.getItem(GITHUB_SESSION_KEY);
+const savedGithubToken = localStorage.getItem(GITHUB_PERSISTENT_KEY) || sessionStorage.getItem(GITHUB_SESSION_KEY);
 if (savedGithubToken) connectGithubToken(savedGithubToken, true);
