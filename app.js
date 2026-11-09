@@ -16,7 +16,11 @@ function visibleFeaturedSlides() {
     && featuredProductsById.has(String(slide.productId)) && slide.productId).map(slide => ({
       product: featuredProductsById.get(String(slide.productId)),
       image: slide.image,
-      optimizedImage: /^new-release-images\/[a-zA-Z0-9._-]+\.webp$/.test(slide.optimizedImage || '') ? slide.optimizedImage : ''
+      optimizedImage: /^new-release-images\/[a-zA-Z0-9._-]+\.webp$/.test(slide.optimizedImage || '') ? slide.optimizedImage : '',
+      // Existing v42/v43 slides have no editable labels: use the COMPLETE catalog strings.
+      artist: typeof slide.artist === 'string' ? slide.artist : null,
+      title: typeof slide.title === 'string' ? slide.title : null,
+      text: typeof slide.text === 'string' ? slide.text : ''
     }));
 }
 
@@ -39,14 +43,18 @@ function renderFeaturedCarousel() {
   const pageCount = Math.ceil(slides.length / pageSize);
   featuredPage = Math.max(0, Math.min(featuredPage, pageCount - 1));
   const slice = slides.slice(featuredPage * pageSize, (featuredPage + 1) * pageSize);
-  el('#featured-items').innerHTML = slice.map(({product,image,optimizedImage}) => {
-    const name = productDisplayName(product);
+  el('#featured-items').innerHTML = slice.map(({product,image,optimizedImage,artist,title,text}) => {
+    // Do NOT use productDisplayName(): it splits off bracketed details.
+    // Editing only changes carousel presentation, never product data or its link.
+    const slideArtist = artist === null ? String(product.artist || '').trim() : artist;
+    const slideTitle = title === null ? String(product.title || '').trim() : title;
+    const slideText = String(text || '');
     const responsiveImage = optimizedImage
       ? `<picture><source srcset="${safe(optimizedImage)}" type="image/webp"><img src="${safe(image)}" alt="" loading="lazy" decoding="async"></picture>`
       : `<img src="${safe(image)}" alt="" loading="lazy" decoding="async">`;
-    return `<button class="featured-item" type="button" data-featured-product="${safe(product.id)}" aria-label="Открыть карточку: ${safe(name.artist)} — ${safe(name.title)}">
+    return `<button class="featured-item" type="button" data-featured-product="${safe(product.id)}" aria-label="Открыть карточку: ${safe(slideArtist)} — ${safe(slideTitle)}">
       <span class="featured-image">${responsiveImage}</span>
-      <span class="featured-item-text"><strong class="featured-item-artist">${safe(name.artist)}</strong><span class="featured-item-album">${safe(name.title)}</span></span>
+      <span class="featured-item-text"><strong class="featured-item-artist">${safe(slideArtist)}</strong><span class="featured-item-album">${safe(slideTitle)}</span>${slideText ? `<span class="featured-item-description">${safe(slideText)}</span>` : ''}</span>
     </button>`;
   }).join('');
   const dots = el('#featured-pagination');

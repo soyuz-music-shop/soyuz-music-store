@@ -897,7 +897,18 @@ const featuredConfigDefault = () => ({ enabled: false, title: 'Новинки', 
 function fillFeaturedEditor() {
   const config = { ...featuredConfigDefault(), ...(siteContent.newReleases || {}) };
   featuredSlides.forEach(slide => { if (slide.previewUrl) URL.revokeObjectURL(slide.previewUrl); });
-  featuredSlides = (config.slides || []).slice(0, FEATURED_LIMIT).map(slide => ({ productId: String(slide.productId || ''), image: String(slide.image || ''), optimizedImage: String(slide.optimizedImage || ''), pendingFile: null, previewUrl: null }));
+  featuredSlides = (config.slides || []).slice(0, FEATURED_LIMIT).map(slide => {
+    const product = findProduct(slide.productId);
+    return {
+      productId: String(slide.productId || ''),
+      image: String(slide.image || ''),
+      optimizedImage: String(slide.optimizedImage || ''),
+      artist: typeof slide.artist === 'string' ? slide.artist : String(product?.artist || ''),
+      title: typeof slide.title === 'string' ? slide.title : String(product?.title || ''),
+      text: typeof slide.text === 'string' ? slide.text : '',
+      pendingFile: null, previewUrl: null
+    };
+  });
   el('#featured-enabled').checked = Boolean(config.enabled);
   el('#featured-title').value = config.title || 'Новинки';
   el('#featured-text').value = config.text ?? config.subtitle ?? '';
@@ -932,13 +943,17 @@ function renderFeaturedSelected() {
   const list = el('#featured-admin-products');
   if (!featuredSlides.length) { list.innerHTML = '<p class="field-status">Добавьте релизы из каталога. Каждый релиз требует отдельный PNG.</p>'; return; }
   list.innerHTML = featuredSlides.map((slide, i) => {
-    const name = featuredProductName(slide.productId);
     const image = slide.previewUrl || slide.image;
     const preview = image ? `<img src="${safe(image)}" alt="" loading="lazy">` : '<span class="featured-no-image">Нет PNG</span>';
     return `<div class="featured-selected-product" data-featured-index="${i}">
       <span class="featured-position">${i + 1}</span>
       <div class="featured-upload-preview">${preview}</div>
-      <span class="featured-selected-name"><strong>${safe(name.artist)}</strong><small>${safe(name.title)}</small><small>ID Ozon: ${safe(slide.productId)}</small></span>
+      <div class="featured-slide-fields">
+        <small class="featured-product-id">Ссылка на товар Ozon: ${safe(slide.productId)} · меняется только текст карусели</small>
+        <label>Артист<input type="text" data-featured-edit="artist" data-featured-index="${i}" maxlength="1000" value="${safe(slide.artist)}" autocomplete="off"></label>
+        <label>Название (включая скобки)<textarea data-featured-edit="title" data-featured-index="${i}" rows="2" maxlength="1000">${safe(slide.title)}</textarea></label>
+        <label>Текст позиции<textarea data-featured-edit="text" data-featured-index="${i}" rows="2" maxlength="2000" placeholder="Необязательное описание релиза">${safe(slide.text)}</textarea></label>
+      </div>
       <label class="featured-upload-button">${image ? 'Заменить PNG' : 'Загрузить PNG'}<input type="file" accept=".png,image/png" data-featured-upload="${i}"></label>
       <div class="featured-reorder"><button type="button" data-featured-up="${i}" aria-label="Выше" title="Выше" ${i===0?'disabled':''}>↑</button><button type="button" data-featured-down="${i}" aria-label="Ниже" title="Ниже" ${i===featuredSlides.length-1?'disabled':''}>↓</button><button type="button" data-featured-remove="${i}" aria-label="Удалить" title="Удалить">×</button></div>
     </div>`;
@@ -967,10 +982,23 @@ el('#featured-search-results').addEventListener('click', event => {
   const add = event.target.closest('[data-featured-add]');
   if (!add) return;
   if (featuredSlides.length >= FEATURED_LIMIT) { setFeaturedStatus(`Не более ${FEATURED_LIMIT} релизов.`, 'error'); return; }
-  featuredSlides.push({ productId: String(add.dataset.featuredAdd), image: '', optimizedImage: '', pendingFile: null, previewUrl: null });
+  const chosen = findProduct(add.dataset.featuredAdd);
+  featuredSlides.push({ productId: String(add.dataset.featuredAdd), image: '', optimizedImage: '',
+    artist: String(chosen?.artist || ''), title: String(chosen?.title || ''), text: '', pendingFile: null, previewUrl: null });
   el('#featured-search').value = '';
   renderFeaturedSearch(); renderFeaturedSelected(); markFeaturedDirty();
 });
+// Live edit: never rebuild the form on every keystroke (keeps cursor and line breaks).
+el('#featured-admin-products').addEventListener('input', event => {
+  const control = event.target.closest('[data-featured-edit]');
+  if (!control) return;
+  const index = Number(control.dataset.featuredIndex);
+  const field = control.dataset.featuredEdit;
+  if (!Number.isInteger(index) || !featuredSlides[index] || !['artist','title','text'].includes(field)) return;
+  featuredSlides[index][field] = control.value;
+  markFeaturedDirty();
+});
+
 el('#featured-admin-products').addEventListener('click', event => {
   const remove = event.target.closest('[data-featured-remove]');
   const up = event.target.closest('[data-featured-up]');
@@ -1083,10 +1111,12 @@ el('#save-featured').addEventListener('click', async () => {
   if (!title) { setFeaturedStatus('Введите заголовок шапки.', 'error'); return; }
   const missing = featuredSlides.find(slide => !slide.pendingFile && !slide.image);
   if (enabled && (!featuredSlides.length || missing)) { setFeaturedStatus('Чтобы включить карусель, выберите релизы и загрузите PNG для каждого.', 'error'); return; }
+  const missingLabels = featuredSlides.find(slide => !slide.artist.trim() || !slide.title.trim());
+  if (enabled && missingLabels) { setFeaturedStatus('У каждой позиции должны быть заполнены артист и название.', 'error'); return; }
   const missingProduct = featuredSlides.find(slide => !findProduct(slide.productId));
   if (enabled && missingProduct) { setFeaturedStatus(`Товар ${missingProduct.productId} больше не найден в каталоге.`, 'error'); return; }
   const config = { enabled, title, text: el('#featured-text').value.trim(), autoplay: el('#featured-autoplay').checked, intervalSeconds: Number(el('#featured-interval').value)||5,
-    slides: featuredSlides.map(slide => ({productId: slide.productId, image: slide.image, ...(slide.optimizedImage ? {optimizedImage: slide.optimizedImage} : {})})) };
+    slides: featuredSlides.map(slide => ({productId: slide.productId, image: slide.image, ...(slide.optimizedImage ? {optimizedImage: slide.optimizedImage} : {}), artist: slide.artist, title: slide.title, text: slide.text})) };
   const button = el('#save-featured'); button.disabled = true; button.textContent = 'Публикуем…';
   try {
     const result = await commitFeaturedImageAndConfig(config);

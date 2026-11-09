@@ -557,3 +557,17 @@ footer p:last-child { margin-left: auto; }
   .featured-controls { align-self: flex-end; }
   .featured-image { height: min(78vw, 300px); }
 }
+
+/* v44: show the full title including parenthesized details; never clamp slide copy. */
+.featured-item-text { min-width: 0; height: auto; }
+.featured-item-artist,.featured-item-album,.featured-item-description {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  max-height: none;
+}
+.featured-item-description { margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.5; }
