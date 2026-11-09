@@ -170,3 +170,12 @@ input:focus,select:focus,textarea:focus { border-color:var(--gold); box-shadow:0
 .featured-selected-product .featured-upload-button,.featured-selected-product .featured-reorder { margin-top: 8px; }
 @media(max-width: 930px) { .featured-selected-product { grid-template-columns: 18px 72px minmax(0,1fr); } .featured-selected-product .featured-upload-button,.featured-selected-product .featured-reorder { grid-column: 3; } }
 @media(max-width: 520px) { .featured-selected-product { grid-template-columns: 18px 58px minmax(0,1fr); gap: 8px; } .featured-upload-preview { width:58px; height:58px; } }
+
+/* V46: about typography controls */
+.about-size-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.about-size-controls label { min-width:0; }
+.about-size-control { display: flex; align-items: center; gap: 12px; }
+.about-size-control input { width: 100%; min-width: 0; accent-color: var(--gold); }
+.about-size-control output { flex: 0 0 50px; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.about-size-help { margin:0 !important; font-size:12px; }
+@media(max-width:620px) { .about-size-controls { grid-template-columns: 1fr; } }

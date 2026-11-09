@@ -18,11 +18,11 @@
     if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
   </script>
   <link rel="preload" as="image" type="image/webp" href="hero-new-shelf.webp?v=43" media="(min-width: 781px)" fetchpriority="high">
-  <link rel="stylesheet" href="styles.css?v=44">
+  <link rel="stylesheet" href="styles.css?v=46">
   <script src="auth-config.js?v=31"></script>
   <script src="auth.js?v=34" defer></script>
   <script src="external-browser.js?v=31" defer></script>
-  <script src="app.js?v=44" defer></script>
+  <script src="app.js?v=46" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -67,7 +67,7 @@
   <main>
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <p class="eyebrow">Официальный интернет-магазин</p>
+        <p class="eyebrow">Официальный интернет-магазин музыкального лейбла Soyuz Music</p>
         <h1 id="hero-title">Музыка, которую<br><em>хочется держать</em><br>в руках</h1>
         <p class="hero-subtitle">Винил · CD · Кассеты · Книги</p>
         <a class="primary-button" href="#catalog">Перейти в каталог <span>↗</span></a>
@@ -156,6 +156,12 @@
             <label><input type="radio" name="category" value="tape"> Кассеты <span data-count="tape">0</span></label>
             <label><input type="radio" name="category" value="book"> Книги <span data-count="book">0</span></label>
             <label><input type="radio" name="category" value="movie"> Фильмы <span data-count="movie">0</span></label>
+          </div>
+          <div class="filter-group">
+            <h3>Издание</h3>
+            <label><input type="radio" name="edition" value="all" checked> Все издания</label>
+            <label><input type="radio" name="edition" value="import"> Импортное издание</label>
+            <label><input type="radio" name="edition" value="russian"> Российское издание</label>
           </div>
           <div class="filter-group">
             <h3>Артист</h3>

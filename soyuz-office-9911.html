@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=44">
-  <script src="admin.js?v=44" defer></script>
+  <link rel="stylesheet" href="admin.css?v=46">
+  <script src="admin.js?v=46" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -130,6 +130,15 @@
         <label>Метка раздела<input id="about-editor-eyebrow" type="text" value="О нас"></label>
         <label>Крупный заголовок<textarea id="about-editor-heading" rows="3"></textarea></label>
         <label>Текст блока<textarea id="about-editor-paragraphs" rows="12"></textarea></label>
+        <div class="about-size-controls" role="group" aria-label="Размеры шрифтов раздела О нас">
+          <label>Размер заголовка
+            <span class="about-size-control"><input id="about-editor-heading-size" type="range" min="28" max="88" step="1" value="72"><output id="about-editor-heading-size-output" for="about-editor-heading-size">72 px</output></span>
+          </label>
+          <label>Размер основного текста
+            <span class="about-size-control"><input id="about-editor-body-size" type="range" min="14" max="28" step="1" value="22"><output id="about-editor-body-size-output" for="about-editor-body-size">22 px</output></span>
+          </label>
+        </div>
+        <p class="about-size-help">Высота раздела подстраивается под содержимое. На небольших экранах шрифты уменьшаются автоматически.</p>
         <div class="about-editor-actions">
           <p id="about-editor-status" class="field-status" role="status" aria-live="polite">Для публикации подключите GitHub в первом блоке.</p>
           <button class="primary-button" id="save-about" type="button" disabled>Опубликовать текст</button>

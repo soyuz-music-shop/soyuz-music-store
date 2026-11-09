@@ -571,3 +571,55 @@ footer p:last-child { margin-left: auto; }
   max-height: none;
 }
 .featured-item-description { margin-top: 9px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+
+/* V45 — carousel cards use all available horizontal space.
+   The current slide count (1, 2 or 3, depending on breakpoint/page)
+   determines the number of equal columns; no empty third slot. */
+.featured-items {
+  width: 100%;
+  grid-template-columns: repeat(var(--featured-visible-columns, 3), minmax(0, 1fr));
+  justify-content: center;
+}
+.featured-items[data-visible-count="1"] .featured-item-text {
+  align-items: center;
+  text-align: center;
+}
+.featured-items[data-visible-count="1"] .featured-image {
+  height: clamp(220px, 28vw, 380px);
+}
+@media (max-width: 700px) {
+  .featured-items[data-visible-count="1"] .featured-image {
+    height: min(78vw, 350px);
+  }
+}
+
+/* V46: keep the carousel wrapper as wide as the category strip.
+   Individual products already adapt to remaining slide count. */
+.featured-carousel { width: auto; max-width: none; margin: 8px 2vw 26px; }
+@media (max-width: 700px) {
+  .featured-carousel { margin: 8px 12px 18px; }
+}
+
+/* Slightly smaller catalog graphics, without hiding or cropping product covers. */
+.category-card { aspect-ratio: 2.75; }
+.cover { aspect-ratio: 1.16; margin: 12px; }
+@media (max-width: 780px) and (min-width: 521px) {
+  .category-card { min-height: 132px; }
+}
+
+/* V46: about section automatically grows to fit its editable text.
+   Sizes are persisted per site, while viewport interpolation remains responsive. */
+.about {
+  height: auto;
+  min-height: 0;
+  --about-heading-size: 72px;
+  --about-body-size: 22px;
+}
+.about-heading h2 {
+  font-size: clamp(26px, calc(var(--about-heading-size) * .42 + 2.6vw), var(--about-heading-size));
+}
+.about-copy {
+  font-size: clamp(14px, calc(var(--about-body-size) * .63 + .48vw), var(--about-body-size));
+  overflow-wrap: anywhere;
+}

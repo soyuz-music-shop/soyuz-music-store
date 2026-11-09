@@ -43,7 +43,12 @@ function renderFeaturedCarousel() {
   const pageCount = Math.ceil(slides.length / pageSize);
   featuredPage = Math.max(0, Math.min(featuredPage, pageCount - 1));
   const slice = slides.slice(featuredPage * pageSize, (featuredPage + 1) * pageSize);
-  el('#featured-items').innerHTML = slice.map(({product,image,optimizedImage,artist,title,text}) => {
+  // v45: fill the entire carousel width with the cards on the CURRENT page,
+  // including partially filled last pages (1 or 2 items of a 3-item page).
+  const featuredGrid = el('#featured-items');
+  featuredGrid.style.setProperty('--featured-visible-columns', String(slice.length));
+  featuredGrid.dataset.visibleCount = String(slice.length);
+  featuredGrid.innerHTML = slice.map(({product,image,optimizedImage,artist,title,text}) => {
     // Do NOT use productDisplayName(): it splits off bracketed details.
     // Editing only changes carousel presentation, never product data or its link.
     const slideArtist = artist === null ? String(product.artist || '').trim() : artist;
@@ -120,6 +125,7 @@ window.addEventListener('pageshow', () => {
 const state = {
   search: '',
   category: 'all',
+  edition: 'all',
   artist: '',
   stockOnly: false,
   maxPrice: 100000,
@@ -243,6 +249,16 @@ const categoryColor = {
   movie: 'linear-gradient(135deg,#251b1b,#7a2020)'
 };
 
+function editionMatches(product, selection) {
+  if (selection === 'all') return true;
+  // Edition classification is sourced only from the catalog's "Издание" spec.
+  // Semicolon-combined values such as "Импортное;Коллекционное" are supported.
+  const editions = String(product.specs?.['Издание'] || '')
+    .split(/[;,|]/)
+    .map(value => value.trim().toLocaleLowerCase('ru'));
+  return editions.includes(selection === 'import' ? 'импортное' : 'российское');
+}
+
 function filteredProducts() {
   const queryTokens = normalizeSearchText(state.search).split(/\s+/).filter(Boolean);
   const artistQuery = normalizeSearchText(state.artist);
@@ -259,6 +275,7 @@ function filteredProducts() {
     ].join(' '));
     return (!queryTokens.length || queryTokens.every(token => searchable.includes(token)))
       && (state.category === 'all' || product.category === state.category)
+      && editionMatches(product, state.edition)
       && (!artistQuery || normalizeSearchText(product.artist).includes(artistQuery))
       && (!state.stockOnly || product.available !== false)
       && product.price <= state.maxPrice
@@ -481,6 +498,11 @@ all('input[name="category"]').forEach(input => input.addEventListener('change', 
   state.visibleCount = 48;
   render();
 }));
+all('input[name="edition"]').forEach(input => input.addEventListener('change', () => {
+  state.edition = input.value;
+  state.visibleCount = 48;
+  render();
+}));
 
 function resetCategoryToAll() {
   state.category = 'all';
@@ -547,6 +569,7 @@ el('#search-form').addEventListener('submit', event => {
   event.preventDefault();
   state.search = el('#header-search').value.trim();
   state.category = 'all';
+  state.edition = 'all';
   state.artist = '';
   state.stockOnly = false;
   state.maxPrice = Number(el('#price-range').max);
@@ -557,6 +580,7 @@ el('#search-form').addEventListener('submit', event => {
   el('#price-range').value = state.maxPrice;
   el('#price-output').textContent = money(state.maxPrice);
   document.querySelector('input[name="category"][value="all"]').checked = true;
+  document.querySelector('input[name="edition"][value="all"]').checked = true;
   setArtistDropdown(false);
   render();
   el('#catalog').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -593,6 +617,7 @@ function resetFilters() {
   const maxPrice = Number(el('#price-range').max);
   state.search = '';
   state.category = 'all';
+  state.edition = 'all';
   state.artist = '';
   state.stockOnly = false;
   state.maxPrice = maxPrice;
@@ -604,6 +629,7 @@ function resetFilters() {
   el('#price-range').value = maxPrice;
   el('#price-output').textContent = money(maxPrice);
   document.querySelector('input[name="category"][value="all"]').checked = true;
+  document.querySelector('input[name="edition"][value="all"]').checked = true;
   render();
 }
 document.querySelectorAll('[data-reset-filters]').forEach(button => button.addEventListener('click', resetFilters));
@@ -740,6 +766,11 @@ async function loadSiteContent() {
     featuredPage = 0;
     renderFeaturedCarousel();
     const about = content.about || {};
+    const aboutSection = el('#about');
+    const headingSize = Math.min(88, Math.max(28, Number(about.headingFontSize) || 72));
+    const bodySize = Math.min(28, Math.max(14, Number(about.bodyFontSize) || 22));
+    aboutSection.style.setProperty('--about-heading-size', `${headingSize}px`);
+    aboutSection.style.setProperty('--about-body-size', `${bodySize}px`);
     if (about.eyebrow) el('#about-eyebrow').textContent = about.eyebrow;
     if (about.heading) {
       const heading = el('#about-title');

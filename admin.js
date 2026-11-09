@@ -72,12 +72,22 @@ function fillAboutEditor() {
   el('#about-editor-eyebrow').value = about.eyebrow || 'О нас';
   el('#about-editor-heading').value = about.heading || '';
   el('#about-editor-paragraphs').value = (about.paragraphs || []).join('\n\n');
+  el('#about-editor-heading-size').value = Math.min(88, Math.max(28, Number(about.headingFontSize) || 72));
+  el('#about-editor-body-size').value = Math.min(28, Math.max(14, Number(about.bodyFontSize) || 22));
+  updateAboutSizeOutputs();
   aboutDirty = false;
   el('#save-about').disabled = true;
 }
 
+function updateAboutSizeOutputs() {
+  el('#about-editor-heading-size-output').textContent = `${el('#about-editor-heading-size').value} px`;
+  el('#about-editor-body-size-output').textContent = `${el('#about-editor-body-size').value} px`;
+}
+
 function readAboutEditor() {
   return {
+    headingFontSize: Number(el('#about-editor-heading-size').value),
+    bodyFontSize: Number(el('#about-editor-body-size').value),
     eyebrow: el('#about-editor-eyebrow').value.trim() || 'О нас',
     heading: el('#about-editor-heading').value.trim(),
     paragraphs: el('#about-editor-paragraphs').value
@@ -481,8 +491,9 @@ function utf8Base64(text) {
   return btoa(binary);
 }
 
-['#about-editor-eyebrow', '#about-editor-heading', '#about-editor-paragraphs'].forEach(selector => {
+['#about-editor-eyebrow', '#about-editor-heading', '#about-editor-paragraphs', '#about-editor-heading-size', '#about-editor-body-size'].forEach(selector => {
   el(selector).addEventListener('input', () => {
+    updateAboutSizeOutputs();
     aboutDirty = true;
     el('#save-about').disabled = !githubToken;
     setAboutStatus(githubToken ? 'Есть неопубликованные изменения.' : 'Изменения сохранены в форме. Для публикации подключите GitHub в первом блоке.');
