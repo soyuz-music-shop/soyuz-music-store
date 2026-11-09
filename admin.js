@@ -246,7 +246,8 @@ async function loadData() {
   el('#product-admin-list').innerHTML = '<p class="loading">Загружаем каталог…</p>';
   try {
     const [productsResponse, overridesResponse, siteContentResponse, avitoReportResponse] = await Promise.all([
-      fetch(`products.json?t=${Date.now()}`, { cache: 'no-store' }),
+      // Revalidate rather than always redownloading ~10 MB on repeated admin visits.
+      fetch('products.json', { cache: 'no-cache' }),
       fetch(`${OVERRIDES_PATH}?t=${Date.now()}`, { cache: 'no-store' }),
       fetch(`${SITE_CONTENT_PATH}?t=${Date.now()}`, { cache: 'no-store' }),
       fetch(`${AVITO_REPORT_PATH}?t=${Date.now()}`, { cache: 'no-store' })
@@ -896,7 +897,7 @@ const featuredConfigDefault = () => ({ enabled: false, title: 'Новинки', 
 function fillFeaturedEditor() {
   const config = { ...featuredConfigDefault(), ...(siteContent.newReleases || {}) };
   featuredSlides.forEach(slide => { if (slide.previewUrl) URL.revokeObjectURL(slide.previewUrl); });
-  featuredSlides = (config.slides || []).slice(0, FEATURED_LIMIT).map(slide => ({ productId: String(slide.productId || ''), image: String(slide.image || ''), pendingFile: null, previewUrl: null }));
+  featuredSlides = (config.slides || []).slice(0, FEATURED_LIMIT).map(slide => ({ productId: String(slide.productId || ''), image: String(slide.image || ''), optimizedImage: String(slide.optimizedImage || ''), pendingFile: null, previewUrl: null }));
   el('#featured-enabled').checked = Boolean(config.enabled);
   el('#featured-title').value = config.title || 'Новинки';
   el('#featured-text').value = config.text ?? config.subtitle ?? '';
@@ -966,7 +967,7 @@ el('#featured-search-results').addEventListener('click', event => {
   const add = event.target.closest('[data-featured-add]');
   if (!add) return;
   if (featuredSlides.length >= FEATURED_LIMIT) { setFeaturedStatus(`Не более ${FEATURED_LIMIT} релизов.`, 'error'); return; }
-  featuredSlides.push({ productId: String(add.dataset.featuredAdd), image: '', pendingFile: null, previewUrl: null });
+  featuredSlides.push({ productId: String(add.dataset.featuredAdd), image: '', optimizedImage: '', pendingFile: null, previewUrl: null });
   el('#featured-search').value = '';
   renderFeaturedSearch(); renderFeaturedSelected(); markFeaturedDirty();
 });
@@ -998,12 +999,49 @@ el('#featured-admin-products').addEventListener('change', async event => {
   if (magic.join(',') !== '137,80,78,71,13,10,26,10') { setFeaturedStatus('Файл не является PNG.', 'error'); input.value = ''; return; }
   if (slide.previewUrl) URL.revokeObjectURL(slide.previewUrl);
   slide.pendingFile = file;
+  // A newly selected PNG invalidates the old lightweight image until publication.
+  slide.optimizedImage = '';
   slide.previewUrl = URL.createObjectURL(file);
   renderFeaturedSelected(); markFeaturedDirty();
 });
 
+async function optimizedFeaturedWebp(file) {
+  // Keep the original PNG, generate a smaller transparent WebP for display.
+  // Maximum 1200px per side maintains sharpness on high-DPI screens.
+  if (typeof document.createElement('canvas').toBlob !== 'function') return null;
+  let image, objectUrl;
+  try {
+    if (typeof createImageBitmap === 'function') image = await createImageBitmap(file);
+    else {
+      objectUrl = URL.createObjectURL(file);
+      image = new Image();
+      await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = objectUrl; });
+    }
+    const width = image.width || image.naturalWidth;
+    const height = image.height || image.naturalHeight;
+    if (!width || !height) return null;
+    const ratio = Math.min(1, 1200 / Math.max(width, height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * ratio));
+    canvas.height = Math.max(1, Math.round(height * ratio));
+    const context = canvas.getContext('2d', { alpha: true });
+    if (!context) return null;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const webp = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', .91));
+    return webp?.type === 'image/webp' && webp.size < file.size ? webp : null;
+  } catch (error) {
+    console.warn('Облегчённая копия PNG не создана; оригинал сохранится.', error);
+    return null;
+  } finally {
+    if (typeof image?.close === 'function') image.close();
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+  }
+}
+
 async function commitFeaturedImageAndConfig(config) {
-  // Create the PNG files and updated settings in one Git commit. All-or-nothing publication.
+  // Original PNG + optimized display version + config are committed atomically.
   const head = await github(`/git/ref/heads/${BRANCH}`);
   const parentSha = head.object.sha;
   const parent = await github(`/git/commits/${parentSha}`);
@@ -1017,6 +1055,17 @@ async function commitFeaturedImageAndConfig(config) {
     const blob = await github('/git/blobs', { method: 'POST', body: JSON.stringify({ content: await fileBase64(slide.pendingFile), encoding: 'base64' }) });
     updates.push({ path: filePath, mode: '100644', type: 'blob', sha: blob.sha });
     config.slides[i].image = filePath;
+    setFeaturedStatus(`Оптимизируем PNG ${i+1} из ${featuredSlides.length}…`);
+    const optimized = await optimizedFeaturedWebp(slide.pendingFile);
+    if (optimized) {
+      const optimizedPath = filePath.replace(/\.png$/, '.webp');
+      const optimizedBlob = await github('/git/blobs', { method: 'POST', body: JSON.stringify({ content: await fileBase64(optimized), encoding: 'base64' }) });
+      updates.push({ path: optimizedPath, mode: '100644', type: 'blob', sha: optimizedBlob.sha });
+      config.slides[i].optimizedImage = optimizedPath;
+    } else {
+      // No WebP support: display the original PNG without cropping.
+      delete config.slides[i].optimizedImage;
+    }
   }
   const payload = { ...siteContent, newReleases: config };
   const contentBlob = await github('/git/blobs', { method: 'POST', body: JSON.stringify({ content: utf8Base64(`${JSON.stringify(payload,null,2)}\n`), encoding: 'base64' }) });
@@ -1037,7 +1086,7 @@ el('#save-featured').addEventListener('click', async () => {
   const missingProduct = featuredSlides.find(slide => !findProduct(slide.productId));
   if (enabled && missingProduct) { setFeaturedStatus(`Товар ${missingProduct.productId} больше не найден в каталоге.`, 'error'); return; }
   const config = { enabled, title, text: el('#featured-text').value.trim(), autoplay: el('#featured-autoplay').checked, intervalSeconds: Number(el('#featured-interval').value)||5,
-    slides: featuredSlides.map(slide => ({productId: slide.productId, image: slide.image})) };
+    slides: featuredSlides.map(slide => ({productId: slide.productId, image: slide.image, ...(slide.optimizedImage ? {optimizedImage: slide.optimizedImage} : {})})) };
   const button = el('#save-featured'); button.disabled = true; button.textContent = 'Публикуем…';
   try {
     const result = await commitFeaturedImageAndConfig(config);

@@ -503,3 +503,57 @@ footer p:last-child { margin-left: auto; }
 .featured-arrow:disabled { opacity: .35; cursor: default; }
 .featured-item:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 @media (max-width:700px) { .featured-image { height: min(75vw, 350px); } }
+
+
+/* V43: uncropped PNG carousel on desktop, tablet and mobile.
+   Each slide keeps its natural aspect ratio inside a responsive stage. */
+.featured-carousel { max-width: 1600px; margin-inline: auto; }
+.featured-head { min-width: 0; }
+.featured-head > div { min-width: 0; }
+.featured-image {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  height: clamp(195px, 21vw, 345px);
+  padding: clamp(10px, 1.5vw, 22px);
+  flex: none;
+  overflow: visible;
+  background: color-mix(in srgb, var(--paper) 86%, var(--white));
+}
+.featured-image picture { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.featured-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+  object-position: center center;
+}
+@media (min-width: 1601px) {
+  .featured-carousel { margin-left: auto; margin-right: auto; }
+}
+@media (max-width: 960px) {
+  .featured-carousel { margin-inline: 2vw; }
+  .featured-image { height: clamp(205px, 31vw, 360px); padding: 16px; }
+}
+@media (max-width: 700px) {
+  .featured-carousel { margin: 8px 12px 18px; padding: 18px 14px; }
+  .featured-head { align-items: flex-start; gap: 14px; }
+  .featured-controls { align-self: center; }
+  .featured-arrow { width: 38px; height: 38px; }
+  .featured-items { grid-template-columns: minmax(0, 1fr); }
+  .featured-item { min-width: 0; padding: 11px; }
+  .featured-image { height: clamp(220px, 65vw, 420px); padding: clamp(12px, 4vw, 24px); }
+  .featured-subtitle { overflow-wrap: anywhere; }
+}
+@media (max-width: 380px) {
+  .featured-head { flex-direction: column; }
+  .featured-controls { align-self: flex-end; }
+  .featured-image { height: min(78vw, 300px); }
+}

@@ -3,6 +3,7 @@
 let featuredConfig = null;
 let featuredPage = 0;
 let featuredTimer = null;
+let featuredProductsById = new Map();
 
 function featuredPageSize() {
   return window.innerWidth < 700 ? 1 : (window.innerWidth < 960 ? 2 : 3);
@@ -11,10 +12,11 @@ function featuredPageSize() {
 function visibleFeaturedSlides() {
   const config = featuredConfig;
   if (!config?.enabled || !Array.isArray(config.slides)) return [];
-  const catalogMap = new Map(products.map(product => [String(product.id), product]));
   return config.slides.filter(slide => /^new-release-images\/[a-zA-Z0-9._-]+\.png$/.test(slide.image || '')
-    && catalogMap.has(String(slide.productId)) && slide.productId).map(slide => ({
-      product: catalogMap.get(String(slide.productId)), image: slide.image
+    && featuredProductsById.has(String(slide.productId)) && slide.productId).map(slide => ({
+      product: featuredProductsById.get(String(slide.productId)),
+      image: slide.image,
+      optimizedImage: /^new-release-images\/[a-zA-Z0-9._-]+\.webp$/.test(slide.optimizedImage || '') ? slide.optimizedImage : ''
     }));
 }
 
@@ -37,10 +39,13 @@ function renderFeaturedCarousel() {
   const pageCount = Math.ceil(slides.length / pageSize);
   featuredPage = Math.max(0, Math.min(featuredPage, pageCount - 1));
   const slice = slides.slice(featuredPage * pageSize, (featuredPage + 1) * pageSize);
-  el('#featured-items').innerHTML = slice.map(({product,image}) => {
+  el('#featured-items').innerHTML = slice.map(({product,image,optimizedImage}) => {
     const name = productDisplayName(product);
+    const responsiveImage = optimizedImage
+      ? `<picture><source srcset="${safe(optimizedImage)}" type="image/webp"><img src="${safe(image)}" alt="" loading="lazy" decoding="async"></picture>`
+      : `<img src="${safe(image)}" alt="" loading="lazy" decoding="async">`;
     return `<button class="featured-item" type="button" data-featured-product="${safe(product.id)}" aria-label="Открыть карточку: ${safe(name.artist)} — ${safe(name.title)}">
-      <span class="featured-image"><img src="${safe(image)}" alt="" loading="lazy" decoding="async"></span>
+      <span class="featured-image">${responsiveImage}</span>
       <span class="featured-item-text"><strong class="featured-item-artist">${safe(name.artist)}</strong><span class="featured-item-album">${safe(name.title)}</span></span>
     </button>`;
   }).join('');
@@ -74,7 +79,11 @@ window.addEventListener('resize', () => {
   const current = featuredPageSize();
   if (current !== window.soyuzFeaturedPageSize) { window.soyuzFeaturedPageSize = current; featuredPage = 0; renderFeaturedCarousel(); }
 });
-document.addEventListener('visibilitychange', renderFeaturedCarousel);
+document.addEventListener('visibilitychange', () => {
+  // Pause offscreen rotation without reconstructing the cards or refetching assets.
+  if (document.hidden) stopFeaturedTimer();
+  else if (featuredConfig?.autoplay) renderFeaturedCarousel();
+});
 
 let products = [];
 let artistNames = [];
@@ -699,6 +708,7 @@ async function loadProducts() {
     artistNames = [...canonicalArtists.values()]
       .sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
     renderArtistList();
+    featuredProductsById = new Map(products.map(product => [String(product.id), product]));
     const maxPrice = Math.ceil(Math.max(...products.map(product => product.price), 1000) / 5000) * 5000;
     el('#price-range').max = maxPrice;
     el('#price-range').value = maxPrice;
