@@ -19,11 +19,27 @@
     "slides": [
       {
         "productId": "2000095762164",
-        "image": "new-release-images/2000095762164-1794217268723-0.png"
+        "image": "new-release-images/2000095762164-1794219377892-0.png",
+        "artist": "Глеб Самойлоff & The Matrixx",
+        "title": "Треш (2LP Red)",
+        "text": "",
+        "optimizedImage": "new-release-images/2000095762164-1794219377892-0.webp"
       },
       {
         "productId": "4610297810532",
-        "image": "new-release-images/4610297810532-1794217268723-1.png"
+        "image": "new-release-images/4610297810532-1794219377892-1.png",
+        "artist": "Глеб Самойлоff & The Matrixx",
+        "title": "Треш (2LP Black)",
+        "text": "",
+        "optimizedImage": "new-release-images/4610297810532-1794219377892-1.webp"
+      },
+      {
+        "productId": "4610297810938",
+        "image": "new-release-images/4610297810938-1794219377892-2.png",
+        "artist": "Глеб Самойлоff & The Matrixx",
+        "title": "Треш (MC black)",
+        "text": "",
+        "optimizedImage": "new-release-images/4610297810938-1794219377892-2.webp"
       }
     ]
   }
