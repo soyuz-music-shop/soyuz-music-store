@@ -1,3 +1,81 @@
+// V42: editor-curated new-release carousel. Product ids are links only;
+// slide artwork is a separately uploaded PNG, never a product photo from Ozon.
+let featuredConfig = null;
+let featuredPage = 0;
+let featuredTimer = null;
+
+function featuredPageSize() {
+  return window.innerWidth < 700 ? 1 : (window.innerWidth < 960 ? 2 : 3);
+}
+
+function visibleFeaturedSlides() {
+  const config = featuredConfig;
+  if (!config?.enabled || !Array.isArray(config.slides)) return [];
+  const catalogMap = new Map(products.map(product => [String(product.id), product]));
+  return config.slides.filter(slide => /^new-release-images\/[a-zA-Z0-9._-]+\.png$/.test(slide.image || '')
+    && catalogMap.has(String(slide.productId)) && slide.productId).map(slide => ({
+      product: catalogMap.get(String(slide.productId)), image: slide.image
+    }));
+}
+
+function stopFeaturedTimer() {
+  if (featuredTimer) clearInterval(featuredTimer);
+  featuredTimer = null;
+}
+
+function renderFeaturedCarousel() {
+  const section = document.querySelector('#new-carousel');
+  if (!section) return;
+  const slides = visibleFeaturedSlides();
+  section.hidden = !slides.length;
+  stopFeaturedTimer();
+  if (!slides.length) return;
+  el('#featured-carousel-title').textContent = String(featuredConfig.title || 'Новинки');
+  el('#featured-carousel-subtitle').textContent = String(featuredConfig.text || featuredConfig.subtitle || '');
+  el('#featured-carousel-subtitle').hidden = !(featuredConfig.text || featuredConfig.subtitle);
+  const pageSize = featuredPageSize();
+  const pageCount = Math.ceil(slides.length / pageSize);
+  featuredPage = Math.max(0, Math.min(featuredPage, pageCount - 1));
+  const slice = slides.slice(featuredPage * pageSize, (featuredPage + 1) * pageSize);
+  el('#featured-items').innerHTML = slice.map(({product,image}) => {
+    const name = productDisplayName(product);
+    return `<button class="featured-item" type="button" data-featured-product="${safe(product.id)}" aria-label="Открыть карточку: ${safe(name.artist)} — ${safe(name.title)}">
+      <span class="featured-image"><img src="${safe(image)}" alt="" loading="lazy" decoding="async"></span>
+      <span class="featured-item-text"><strong class="featured-item-artist">${safe(name.artist)}</strong><span class="featured-item-album">${safe(name.title)}</span></span>
+    </button>`;
+  }).join('');
+  const dots = el('#featured-pagination');
+  dots.innerHTML = Array.from({length: pageCount},(_,i) => `<button class="featured-dot" type="button" data-featured-page="${i}" aria-label="Страница ${i+1}" aria-current="${featuredPage===i}"></button>`).join('');
+  el('#featured-prev').disabled = pageCount < 2;
+  el('#featured-next').disabled = pageCount < 2;
+  if (featuredConfig.autoplay && pageCount > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && !document.hidden) {
+    const seconds = Math.min(20, Math.max(3, Number(featuredConfig.intervalSeconds) || 5));
+    featuredTimer = setInterval(() => { featuredPage = (featuredPage + 1) % pageCount; renderFeaturedCarousel(); }, seconds * 1000);
+  }
+}
+
+document.addEventListener('click', event => {
+  const item = event.target.closest('[data-featured-product]');
+  if (item) {
+    const product = products.find(product => String(product.id) === item.dataset.featuredProduct);
+    if (product) openProduct(product);
+    return;
+  }
+  const page = event.target.closest('[data-featured-page]');
+  if (page) { featuredPage = Number(page.dataset.featuredPage); renderFeaturedCarousel(); return; }
+  if (event.target.closest('#featured-prev') || event.target.closest('#featured-next')) {
+    const totalPages = Math.ceil(visibleFeaturedSlides().length / featuredPageSize());
+    if (totalPages < 2) return;
+    featuredPage = (featuredPage + (event.target.closest('#featured-next') ? 1 : -1) + totalPages) % totalPages;
+    renderFeaturedCarousel();
+  }
+});
+window.addEventListener('resize', () => {
+  const current = featuredPageSize();
+  if (current !== window.soyuzFeaturedPageSize) { window.soyuzFeaturedPageSize = current; featuredPage = 0; renderFeaturedCarousel(); }
+});
+document.addEventListener('visibilitychange', renderFeaturedCarousel);
+
 let products = [];
 let artistNames = [];
 let waitlistRows = [];
@@ -628,6 +706,7 @@ async function loadProducts() {
     el('#price-output').textContent = money(maxPrice);
     persist();
     render();
+    renderFeaturedCarousel();
   } catch (error) {
     el('#product-grid').innerHTML = '<p class="loading">Не удалось загрузить каталог. Обновите страницу.</p>';
     console.error(error);
@@ -639,6 +718,9 @@ async function loadSiteContent() {
     const response = await fetch(`site-content.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) return;
     const content = await response.json();
+    featuredConfig = content.newReleases || null;
+    featuredPage = 0;
+    renderFeaturedCarousel();
     const about = content.about || {};
     if (about.eyebrow) el('#about-eyebrow').textContent = about.eyebrow;
     if (about.heading) {

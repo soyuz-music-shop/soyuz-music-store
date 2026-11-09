@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=23">
-  <script src="admin.js?v=25" defer></script>
+  <link rel="stylesheet" href="admin.css?v=42">
+  <script src="admin.js?v=42" defer></script>
 </head>
 <body>
   <header class="admin-header">
@@ -134,6 +134,34 @@
           <p id="about-editor-status" class="field-status" role="status" aria-live="polite">Для публикации подключите GitHub в первом блоке.</p>
           <button class="primary-button" id="save-about" type="button" disabled>Опубликовать текст</button>
         </div>
+      </div>
+    </section>
+
+    <section class="featured-admin-card" aria-labelledby="featured-admin-title">
+      <div class="featured-admin-head">
+        <div>
+          <p class="step-number">Оформление</p>
+          <h2 id="featured-admin-title">Шапка «Новинки» — карусель</h2>
+          <p>Выбирайте товары только для перехода в карточку. Для каждого релиза самостоятельно загрузите PNG. Цен в карусели нет.</p>
+        </div>
+        <label class="featured-switch"><input type="checkbox" id="featured-enabled"> Показывать на главной</label>
+      </div>
+      <div class="featured-admin-settings">
+        <label>Заголовок<input id="featured-title" type="text" maxlength="70" value="Новинки"></label>
+        <label class="featured-text-label">Текст шапки<textarea id="featured-text" rows="3" maxlength="320" placeholder="Свежие поступления"></textarea></label>
+        <label class="featured-autoplay"><input type="checkbox" id="featured-autoplay"> Автопрокрутка</label>
+        <label>Интервал<select id="featured-interval"><option value="4">4 секунды</option><option value="5">5 секунд</option><option value="7">7 секунд</option><option value="10">10 секунд</option></select></label>
+      </div>
+      <div class="featured-admin-picker">
+        <label for="featured-search">Добавить позицию Ozon (поиск по исполнителю, альбому или артикулу)</label>
+        <input id="featured-search" type="search" autocomplete="off" placeholder="Начните вводить название или артикул">
+        <div class="featured-search-results" id="featured-search-results" role="listbox" aria-label="Результаты поиска" hidden></div>
+      </div>
+      <div class="featured-admin-products-header"><strong>Релизы в карусели (собственные PNG)</strong><span id="featured-count">0 из 8</span></div>
+      <div class="featured-admin-products" id="featured-admin-products"><p class="field-status">Пока ничего не выбрано.</p></div>
+      <div class="featured-admin-actions">
+        <p class="field-status" id="featured-status" aria-live="polite">Для публикации подключите GitHub.</p>
+        <button class="primary-button" type="button" id="save-featured" disabled>Опубликовать карусель</button>
       </div>
     </section>
 

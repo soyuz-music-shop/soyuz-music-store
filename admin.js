@@ -23,6 +23,8 @@ let selectedXmlFile = null;
 let siteContent = defaultSiteContent();
 let siteContentSha = '';
 let aboutDirty = false;
+let featuredDirty = false;
+let featuredSlides = [];
 let avitoReport = null;
 let avitoReportVisibleCount = 200;
 let sodiumPromise = null;
@@ -259,6 +261,7 @@ async function loadData() {
     avitoReport = avitoReportResponse.ok ? await avitoReportResponse.json() : null;
     avitoReportVisibleCount = 200;
     fillAboutEditor();
+    fillFeaturedEditor();
     visibleCount = 100;
     render();
   } catch (error) {
@@ -325,6 +328,7 @@ async function connectGithubToken(token, restored = false) {
     setAvitoSecretStatus('Можно сохранить или заменить ключи Avito.', 'success');
     el('#publish-changes').disabled = !dirty;
     el('#save-about').disabled = !aboutDirty;
+    el('#save-featured').disabled = !featuredDirty;
     el('#upload-excel').disabled = !selectedExcelFiles.length;
     el('#upload-xml-prices').disabled = !selectedXmlFile;
     el('#sync-now').disabled = false;
@@ -359,6 +363,7 @@ el('#disconnect-github').addEventListener('click', () => {
   el('#sync-now').disabled = false;
   setGithubStatus('Отключено. Сохранённый доступ удалён из браузера.', 'success');
   setAvitoSecretStatus('Подключите GitHub в первом блоке, затем сохраните оба ключа.');
+  el('#save-featured').disabled = true;
 });
 
 async function encryptGithubSecret(value, publicKey) {
@@ -878,9 +883,173 @@ el('#upload-excel').addEventListener('click', async () => {
 });
 
 window.addEventListener('beforeunload', event => {
-  if (!dirty && !aboutDirty) return;
+  if (!dirty && !aboutDirty && !featuredDirty) return;
   event.preventDefault();
   event.returnValue = '';
+});
+
+// --- V42: New release carousel: text + per-product PNG, GitHub commit ---
+const FEATURED_LIMIT = 8;
+const FEATURED_MAX_PNG_BYTES = 8 * 1024 * 1024;
+const featuredConfigDefault = () => ({ enabled: false, title: 'Новинки', text: 'Свежие поступления', autoplay: false, intervalSeconds: 5, slides: [] });
+
+function fillFeaturedEditor() {
+  const config = { ...featuredConfigDefault(), ...(siteContent.newReleases || {}) };
+  featuredSlides.forEach(slide => { if (slide.previewUrl) URL.revokeObjectURL(slide.previewUrl); });
+  featuredSlides = (config.slides || []).slice(0, FEATURED_LIMIT).map(slide => ({ productId: String(slide.productId || ''), image: String(slide.image || ''), pendingFile: null, previewUrl: null }));
+  el('#featured-enabled').checked = Boolean(config.enabled);
+  el('#featured-title').value = config.title || 'Новинки';
+  el('#featured-text').value = config.text ?? config.subtitle ?? '';
+  el('#featured-autoplay').checked = Boolean(config.autoplay);
+  el('#featured-interval').value = String(config.intervalSeconds || 5);
+  featuredDirty = false;
+  el('#save-featured').disabled = true;
+  setFeaturedStatus('Для публикации изменений подключите GitHub в первом блоке.');
+  renderFeaturedSelected();
+}
+
+function setFeaturedStatus(message, type = '') {
+  const node = el('#featured-status');
+  node.textContent = message;
+  node.className = `field-status ${type}`;
+}
+
+function markFeaturedDirty() {
+  featuredDirty = true;
+  el('#save-featured').disabled = !githubToken;
+  setFeaturedStatus(githubToken ? 'Есть неопубликованные изменения.' : 'Изменения не опубликованы. Подключите GitHub.', '');
+}
+
+function featuredProductName(id) {
+  const product = findProduct(id);
+  if (!product) return { artist: 'Товар не найден', title: id };
+  return productDisplayName(product);
+}
+
+function renderFeaturedSelected() {
+  el('#featured-count').textContent = `${featuredSlides.length} из ${FEATURED_LIMIT}`;
+  const list = el('#featured-admin-products');
+  if (!featuredSlides.length) { list.innerHTML = '<p class="field-status">Добавьте релизы из каталога. Каждый релиз требует отдельный PNG.</p>'; return; }
+  list.innerHTML = featuredSlides.map((slide, i) => {
+    const name = featuredProductName(slide.productId);
+    const image = slide.previewUrl || slide.image;
+    const preview = image ? `<img src="${safe(image)}" alt="" loading="lazy">` : '<span class="featured-no-image">Нет PNG</span>';
+    return `<div class="featured-selected-product" data-featured-index="${i}">
+      <span class="featured-position">${i + 1}</span>
+      <div class="featured-upload-preview">${preview}</div>
+      <span class="featured-selected-name"><strong>${safe(name.artist)}</strong><small>${safe(name.title)}</small><small>ID Ozon: ${safe(slide.productId)}</small></span>
+      <label class="featured-upload-button">${image ? 'Заменить PNG' : 'Загрузить PNG'}<input type="file" accept=".png,image/png" data-featured-upload="${i}"></label>
+      <div class="featured-reorder"><button type="button" data-featured-up="${i}" aria-label="Выше" title="Выше" ${i===0?'disabled':''}>↑</button><button type="button" data-featured-down="${i}" aria-label="Ниже" title="Ниже" ${i===featuredSlides.length-1?'disabled':''}>↓</button><button type="button" data-featured-remove="${i}" aria-label="Удалить" title="Удалить">×</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderFeaturedSearch() {
+  const query = normalize(el('#featured-search').value);
+  const list = el('#featured-search-results');
+  if (!query) { list.hidden = true; list.innerHTML = ''; return; }
+  const selected = new Set(featuredSlides.map(slide => slide.productId));
+  const tokens = query.split(/\s+/).filter(Boolean);
+  const matches = mergedProducts().filter(product => !selected.has(String(product.id)) && tokens.every(token => normalize(`${product.id} ${product.artist} ${product.title}`).includes(token))).slice(0, 14);
+  list.hidden = false;
+  list.innerHTML = matches.length ? matches.map(product => {
+    const name = productDisplayName(product);
+    return `<button class="featured-search-hit" type="button" data-featured-add="${safe(product.id)}"><img src="${safe(product.image || '')}" alt="" loading="lazy"><span><strong>${safe(name.artist)}</strong><small>${safe(name.title)} · ${safe(product.id)}</small></span></button>`;
+  }).join('') : '<p class="field-status">Не найдено. Попробуйте другой запрос.</p>';
+}
+
+['#featured-enabled', '#featured-title', '#featured-text', '#featured-autoplay', '#featured-interval'].forEach(selector => {
+  el(selector).addEventListener(selector === '#featured-enabled' || selector === '#featured-autoplay' || selector === '#featured-interval' ? 'change' : 'input', markFeaturedDirty);
+});
+el('#featured-search').addEventListener('input', renderFeaturedSearch);
+el('#featured-search-results').addEventListener('click', event => {
+  const add = event.target.closest('[data-featured-add]');
+  if (!add) return;
+  if (featuredSlides.length >= FEATURED_LIMIT) { setFeaturedStatus(`Не более ${FEATURED_LIMIT} релизов.`, 'error'); return; }
+  featuredSlides.push({ productId: String(add.dataset.featuredAdd), image: '', pendingFile: null, previewUrl: null });
+  el('#featured-search').value = '';
+  renderFeaturedSearch(); renderFeaturedSelected(); markFeaturedDirty();
+});
+el('#featured-admin-products').addEventListener('click', event => {
+  const remove = event.target.closest('[data-featured-remove]');
+  const up = event.target.closest('[data-featured-up]');
+  const down = event.target.closest('[data-featured-down]');
+  if (remove) {
+    const slide = featuredSlides.splice(Number(remove.dataset.featuredRemove), 1)[0];
+    if (slide?.previewUrl) URL.revokeObjectURL(slide.previewUrl);
+  } else if (up || down) {
+    const i = Number((up || down).dataset[up ? 'featuredUp' : 'featuredDown']);
+    const j = i + (up ? -1 : 1);
+    if (j < 0 || j >= featuredSlides.length) return;
+    [featuredSlides[i], featuredSlides[j]] = [featuredSlides[j], featuredSlides[i]];
+  } else return;
+  renderFeaturedSelected(); markFeaturedDirty();
+});
+el('#featured-admin-products').addEventListener('change', async event => {
+  const input = event.target.closest('[data-featured-upload]');
+  if (!input || !input.files?.length) return;
+  const index = Number(input.dataset.featuredUpload);
+  const slide = featuredSlides[index];
+  if (!slide) return;
+  const file = input.files[0];
+  if (!/\.png$/i.test(file.name) || (file.type && file.type !== 'image/png')) { setFeaturedStatus('Можно загрузить только PNG.', 'error'); input.value = ''; return; }
+  if (file.size > FEATURED_MAX_PNG_BYTES) { setFeaturedStatus('PNG должен быть не больше 8 МБ.', 'error'); input.value = ''; return; }
+  const magic = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  if (magic.join(',') !== '137,80,78,71,13,10,26,10') { setFeaturedStatus('Файл не является PNG.', 'error'); input.value = ''; return; }
+  if (slide.previewUrl) URL.revokeObjectURL(slide.previewUrl);
+  slide.pendingFile = file;
+  slide.previewUrl = URL.createObjectURL(file);
+  renderFeaturedSelected(); markFeaturedDirty();
+});
+
+async function commitFeaturedImageAndConfig(config) {
+  // Create the PNG files and updated settings in one Git commit. All-or-nothing publication.
+  const head = await github(`/git/ref/heads/${BRANCH}`);
+  const parentSha = head.object.sha;
+  const parent = await github(`/git/commits/${parentSha}`);
+  const updates = [];
+  const nonce = Date.now();
+  for (let i=0; i<featuredSlides.length; i++) {
+    const slide = featuredSlides[i];
+    if (!slide.pendingFile) continue;
+    setFeaturedStatus(`Загружаем PNG ${i+1} из ${featuredSlides.length}…`);
+    const filePath = `new-release-images/${slide.productId}-${nonce}-${i}.png`;
+    const blob = await github('/git/blobs', { method: 'POST', body: JSON.stringify({ content: await fileBase64(slide.pendingFile), encoding: 'base64' }) });
+    updates.push({ path: filePath, mode: '100644', type: 'blob', sha: blob.sha });
+    config.slides[i].image = filePath;
+  }
+  const payload = { ...siteContent, newReleases: config };
+  const contentBlob = await github('/git/blobs', { method: 'POST', body: JSON.stringify({ content: utf8Base64(`${JSON.stringify(payload,null,2)}\n`), encoding: 'base64' }) });
+  updates.push({ path: SITE_CONTENT_PATH, mode: '100644', type: 'blob', sha: contentBlob.sha });
+  const tree = await github('/git/trees', {method:'POST',body:JSON.stringify({base_tree:parent.tree.sha,tree:updates})});
+  const commit = await github('/git/commits',{method:'POST',body:JSON.stringify({message:'Обновить карусель Новинки и PNG',tree:tree.sha,parents:[parentSha]})});
+  await github(`/git/refs/heads/${BRANCH}`, {method:'PATCH',body:JSON.stringify({sha:commit.sha,force:false})});
+  return { payload, sha: contentBlob.sha };
+}
+
+el('#save-featured').addEventListener('click', async () => {
+  if (!githubToken || !featuredDirty) return;
+  const enabled = el('#featured-enabled').checked;
+  const title = el('#featured-title').value.trim();
+  if (!title) { setFeaturedStatus('Введите заголовок шапки.', 'error'); return; }
+  const missing = featuredSlides.find(slide => !slide.pendingFile && !slide.image);
+  if (enabled && (!featuredSlides.length || missing)) { setFeaturedStatus('Чтобы включить карусель, выберите релизы и загрузите PNG для каждого.', 'error'); return; }
+  const missingProduct = featuredSlides.find(slide => !findProduct(slide.productId));
+  if (enabled && missingProduct) { setFeaturedStatus(`Товар ${missingProduct.productId} больше не найден в каталоге.`, 'error'); return; }
+  const config = { enabled, title, text: el('#featured-text').value.trim(), autoplay: el('#featured-autoplay').checked, intervalSeconds: Number(el('#featured-interval').value)||5,
+    slides: featuredSlides.map(slide => ({productId: slide.productId, image: slide.image})) };
+  const button = el('#save-featured'); button.disabled = true; button.textContent = 'Публикуем…';
+  try {
+    const result = await commitFeaturedImageAndConfig(config);
+    siteContent = result.payload;
+    siteContentSha = result.sha;
+    fillFeaturedEditor();
+    setFeaturedStatus('Шапка опубликована. После обновления GitHub Pages изменения появятся на сайте.', 'success');
+    toast('Шапка «Новинки» опубликована');
+  } catch (error) {
+    setFeaturedStatus(`Не удалось опубликовать: ${error.message}`, 'error');
+    button.disabled = false;
+  } finally { button.textContent = 'Опубликовать карусель'; }
 });
 
 loadData();

@@ -17,11 +17,11 @@
     const savedTheme = localStorage.getItem('soyuz-theme');
     if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
   </script>
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=42">
   <script src="auth-config.js?v=31"></script>
   <script src="auth.js?v=34" defer></script>
   <script src="external-browser.js?v=31" defer></script>
-  <script src="app.js?v=32" defer></script>
+  <script src="app.js?v=42" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -78,9 +78,25 @@
       </div>
       <div class="hero-art" aria-hidden="true">
         <div class="hero-vinyl-wrap">
-          <img class="hero-vinyl-reference" src="hero-vinyl-branded.png?v=15" alt="">
+          <img class="hero-vinyl-reference" src="hero-new-shelf.png?v=42" alt="">
         </div>
       </div>
+    </section>
+
+    <section class="featured-carousel" id="new-carousel" aria-labelledby="featured-carousel-title" hidden>
+      <div class="featured-head">
+        <div>
+          <p class="eyebrow">Выбор SOYUZ MUSIC</p>
+          <h2 id="featured-carousel-title">Новинки</h2>
+          <p class="featured-subtitle" id="featured-carousel-subtitle"></p>
+        </div>
+        <div class="featured-controls">
+          <button class="featured-arrow" id="featured-prev" type="button" aria-label="Предыдущие новинки">←</button>
+          <button class="featured-arrow" id="featured-next" type="button" aria-label="Следующие новинки">→</button>
+        </div>
+      </div>
+      <div class="featured-items" id="featured-items" aria-live="off"></div>
+      <div class="featured-pagination" id="featured-pagination" aria-label="Переключение новинок"></div>
     </section>
 
     <section class="category-strip" id="categories" aria-label="Категории">
