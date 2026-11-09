@@ -11,7 +11,7 @@
     ]
   },
   "newReleases": {
-    "enabled": false,
+    "enabled": true,
     "title": "Новинки",
     "text": "Свежие поступления",
     "autoplay": true,
