@@ -12,8 +12,8 @@
   },
   "newReleases": {
     "enabled": true,
-    "title": "Новинки",
-    "text": "Свежие поступления",
+    "title": "Свежие поступления",
+    "text": "",
     "autoplay": true,
     "intervalSeconds": 5,
     "slides": [
@@ -24,10 +24,6 @@
       {
         "productId": "4610297810532",
         "image": "new-release-images/4610297810532-1794217268723-1.png"
-      },
-      {
-        "productId": "4610297810938",
-        "image": "new-release-images/4610297810938-1794217268723-2.png"
       }
     ]
   }
