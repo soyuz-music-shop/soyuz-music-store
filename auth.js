@@ -36,6 +36,8 @@
   let waitlistIds = new Set();
   let waitlistRows = [];
   let newsletterArtistNames = [];
+  const pendingWaitlistKey = 'soyuz-pending-waitlist';
+  let submittingPendingWaitlist = false;
 
   const configured = () => Boolean(config.url && config.anonKey);
   const apiUrl = path => `${String(config.url).replace(/\/$/, '')}/auth/v1${path}`;
@@ -239,9 +241,73 @@
     renderNewsletterControls();
   }
 
+  function readPendingWaitlist() {
+    try {
+      const raw = sessionStorage.getItem(pendingWaitlistKey);
+      const value = raw ? JSON.parse(raw) : null;
+      return value && typeof value.id === 'string' && value.id.length < 150 ? value : null;
+    } catch { return null; }
+  }
+
+  function requestWaitlistAfterLogin(product) {
+    // Keep the selected release across the redirect to login/registration.
+    // Only public catalog information is stored; no credentials or tokens.
+    const selected = {
+      id: String(product.id).slice(0, 140),
+      artist: String(product.artist || '').slice(0, 250),
+      title: String(product.title || '').slice(0, 500)
+    };
+    sessionStorage.setItem(pendingWaitlistKey, JSON.stringify(selected));
+    window.location.href = 'account.html';
+  }
+
+  function showPendingWaitlistPrompt() {
+    if (!isAccountPage) return;
+    const pending = readPendingWaitlist();
+    const subtitle = document.querySelector('#auth-subtitle');
+    if (!subtitle) return;
+    let note = document.querySelector('#pending-waitlist-prompt');
+    if (!pending) { note?.remove(); return; }
+    if (!note) {
+      note = document.createElement('p');
+      note.id = 'pending-waitlist-prompt';
+      note.className = 'pending-waitlist-prompt';
+      subtitle.insertAdjacentElement('afterend', note);
+    }
+    note.textContent = `Войдите или зарегистрируйтесь, чтобы добавить «${[pending.artist, pending.title].filter(Boolean).join(' — ')}» в лист ожидания.`;
+  }
+
+  async function finishPendingWaitlist() {
+    const pending = readPendingWaitlist();
+    if (!pending || !session?.access_token || submittingPendingWaitlist) return;
+    const email = String(session.user?.user_metadata?.contact_email || '').trim();
+    if (!email) {
+      if (profileMessage) profileMessage.textContent = 'Для добавления выбранного релиза укажите email для уведомлений и сохраните профиль.';
+      return;
+    }
+    submittingPendingWaitlist = true;
+    try {
+      await addToWaitlist(pending);
+      // Remove the request only after the server confirms the write.
+      sessionStorage.removeItem(pendingWaitlistKey);
+      showPendingWaitlistPrompt();
+      if (profileMessage) {
+        profileMessage.textContent = `Релиз «${[pending.artist, pending.title].filter(Boolean).join(' — ')}» добавлен в ваш лист ожидания.`;
+        profileMessage.classList.add('success');
+      }
+    } catch (error) {
+      if (profileMessage) {
+        profileMessage.textContent = `Не удалось добавить релиз: ${error.message}`;
+        profileMessage.classList.remove('success');
+      }
+    } finally {
+      submittingPendingWaitlist = false;
+    }
+  }
+
   async function addToWaitlist(product) {
     if (!session?.access_token) {
-      window.location.href = 'account.html';
+      requestWaitlistAfterLogin(product);
       return false;
     }
     const metadata = session.user?.user_metadata || {};
@@ -327,6 +393,7 @@
       dispatchAuthChange();
       await loadWaitlist();
       await loadNewsletterPreference();
+      await finishPendingWaitlist();
       if (!isAccountPage && typeof dialog.close === 'function') dialog.close();
     } catch (error) {
       const replacements = {
@@ -365,6 +432,7 @@
       profileMessage.textContent = 'Данные сохранены.';
       profileMessage.classList.add('success');
       dispatchAuthChange();
+      await finishPendingWaitlist();
     } catch (error) {
       profileMessage.textContent = error.message;
       profileMessage.classList.remove('success');
@@ -480,6 +548,7 @@
   });
 
   window.SOYUZ_AUTH = {
+    requestWaitlistAfterLogin,
     addToWaitlist,
     isWaiting: productId => waitlistIds.has(String(productId)),
     getSession: () => session,
@@ -494,5 +563,7 @@
     dispatchAuthChange();
     await loadWaitlist();
     await loadNewsletterPreference();
+    showPendingWaitlistPrompt();
+    await finishPendingWaitlist();
   })();
 })();

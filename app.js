@@ -72,6 +72,41 @@ function renderFeaturedCarousel() {
   }
 }
 
+// v47: vertical scrolling stays native; a deliberate horizontal touch swipe changes pages.
+// No third-party slider, no extra downloads and no accidental product opening after a swipe.
+(() => {
+  const track = document.querySelector('#featured-items');
+  if (!track) return;
+  let start = null;
+  let ignoreClick = false;
+  track.addEventListener('touchstart', event => {
+    if (event.touches.length !== 1) { start = null; return; }
+    const touch = event.touches[0];
+    start = { x: touch.clientX, y: touch.clientY };
+  }, { passive: true });
+  track.addEventListener('touchcancel', () => { start = null; }, { passive: true });
+  track.addEventListener('touchend', event => {
+    if (!start || event.changedTouches.length !== 1) { start = null; return; }
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    start = null;
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+    const pages = Math.ceil(visibleFeaturedSlides().length / featuredPageSize());
+    if (pages < 2) return;
+    ignoreClick = true;
+    setTimeout(() => { ignoreClick = false; }, 450);
+    featuredPage = (featuredPage + (dx < 0 ? 1 : -1) + pages) % pages;
+    renderFeaturedCarousel();
+  }, { passive: true });
+  track.addEventListener('click', event => {
+    if (!ignoreClick) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    ignoreClick = false;
+  }, true);
+})();
+
 document.addEventListener('click', event => {
   const item = event.target.closest('[data-featured-product]');
   if (item) {
@@ -447,6 +482,10 @@ document.addEventListener('click', async event => {
       return;
     }
     try {
+      if (!window.SOYUZ_AUTH?.getSession()?.access_token) {
+        window.SOYUZ_AUTH?.requestWaitlistAfterLogin(product);
+        return;
+      }
       const added = await window.SOYUZ_AUTH?.addToWaitlist(product);
       if (added) {
         render();

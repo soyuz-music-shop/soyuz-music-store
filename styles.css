@@ -623,3 +623,7 @@ footer p:last-child { margin-left: auto; }
   font-size: clamp(14px, calc(var(--about-body-size) * .63 + .48vw), var(--about-body-size));
   overflow-wrap: anywhere;
 }
+
+/* v47: swipe horizontally through new releases without blocking vertical page scroll. */
+#featured-items { touch-action: pan-y; }
+.pending-waitlist-prompt { margin: 12px 0; padding: 11px 13px; border: 1px solid var(--gold); border-radius: 10px; color: var(--ink); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
