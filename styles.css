@@ -127,9 +127,9 @@ h1 em { color: var(--gold); font-style: normal; }
 .hero-vinyl-wrap { position: absolute; z-index: 1; width: min(55vw, 900px); max-width: none; right: -6vw; top: 50%; transform: translateY(-50%); }
 .hero-vinyl-reference { display: block; width: 100%; height: auto; filter: drop-shadow(0 28px 45px rgba(41,31,15,.16)); }
 
-.category-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 0 2vw 28px; }
+.category-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; min-width: 0; padding: 0 2vw 28px; }
 #categories { scroll-margin-top: 128px; }
-.category-card { appearance: none; aspect-ratio: 2.45; min-height: 0; border: 0; outline: 0; border-radius: 12px; padding: 0; cursor: pointer; overflow: hidden; position: relative; background: #12110f; box-shadow: none; clip-path: inset(1px round 12px); }
+.category-card { appearance: none; width: 100%; min-width: 0; aspect-ratio: 2.45; min-height: 0; border: 0; outline: 0; border-radius: 12px; padding: 0; cursor: pointer; overflow: hidden; position: relative; background: #12110f; box-shadow: none; clip-path: inset(1px round 12px); }
 .category-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .category-card img { display: block; position: absolute; max-width: none; pointer-events: none; }
 .vinyl-card img { --crop-center-x: 14.2%; width: 411.12%; height: 509.78%; left: -8.34%; top: -336.79%; }
@@ -387,7 +387,7 @@ footer p:last-child { margin-left: auto; }
   .about { gap: 46px; padding-inline: 5vw; }
 }
 
-@media (max-width: 780px) {
+@media (max-width: 900px) {
   .site-header { height: auto; min-height: 112px; grid-template-columns: auto auto minmax(0,1fr) auto auto auto auto auto; grid-template-rows: 56px 48px; gap: 0 3px; padding: 0 8px 8px; }
   .brand, .main-nav, .account-button, #notification-button, #theme-toggle, #favorites-button, #cart-button { grid-row: 1; }
   .brand { grid-column: 1; }
@@ -604,7 +604,7 @@ footer p:last-child { margin-left: auto; }
 /* Slightly smaller catalog graphics, without hiding or cropping product covers. */
 .category-card { aspect-ratio: 2.75; }
 .cover { aspect-ratio: 1.16; margin: 12px; }
-@media (max-width: 780px) and (min-width: 521px) {
+@media (max-width: 900px) and (min-width: 521px) {
   .category-card { min-height: 132px; }
 }
 
@@ -627,3 +627,26 @@ footer p:last-child { margin-left: auto; }
 /* v47: swipe horizontally through new releases without blocking vertical page scroll. */
 #featured-items { touch-action: pan-y; }
 .pending-waitlist-prompt { margin: 12px 0; padding: 11px 13px; border: 1px solid var(--gold); border-radius: 10px; color: var(--ink); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+
+/* V48: responsive transitions for compact tablets, narrow phones and wide screens. */
+html, body { max-width: 100%; }
+
+@media (min-width: 1600px) {
+  .catalog-section { max-width: 1920px; margin-inline: auto; }
+  .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  #categories { scroll-margin-top: 120px; }
+  .hero-copy { max-width: 760px; }
+  .catalog-section { padding-top: 52px; }
+}
+
+@media (max-width: 420px) {
+  .site-header { gap: 0 3px; padding-inline: 6px; }
+  .main-nav { display: none; }
+  .header-search { padding-left: 12px; }
+  .header-search svg { width: 20px; flex: 0 0 auto; }
+  .search-button { padding-inline: 13px; }
+  h1 { font-size: clamp(36px, 11.2vw, 40px); }
+}
