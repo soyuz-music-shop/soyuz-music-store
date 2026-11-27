@@ -2,6 +2,8 @@
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 import re
+import json
+from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, Query, Response
@@ -203,6 +205,43 @@ def summary(response: Response):
         imported = conn.execute(text("SELECT max(imported_at) FROM store.catalog_imports")).scalar_one()
         return {**totals, "categories": categories, "imported_at": imported,
                 "data_mode": "snapshot", "sales_enabled": False}
+
+
+FEATURED_CONFIG = Path(__file__).resolve().parent / "storefront" / "featured.json"
+
+@router.get("/featured")
+def featured(response: Response):
+    no_cache(response)
+    try:
+        config = json.loads(FEATURED_CONFIG.read_text(encoding="utf-8"))
+        slides = config["slides"]
+        if not isinstance(slides, list) or len(slides) > 100:
+            raise ValueError("invalid slides")
+    except (OSError, ValueError, KeyError, TypeError):
+        raise HTTPException(503, "Featured content unavailable") from None
+    if not config.get("enabled"):
+        return {"enabled": False, "slides": []}
+    candidates = []
+    for slide in slides:
+        if not isinstance(slide, dict):
+            continue
+        ean, image = slide.get("ean"), slide.get("image")
+        if not isinstance(ean, str) or not 1 <= len(ean) <= 240:
+            continue
+        if not isinstance(image, str) or not re.fullmatch(r"new-release-images/[a-zA-Z0-9._-]+\.webp", image):
+            continue
+        if not (FEATURED_CONFIG.parent / "assets" / image).is_file():
+            continue
+        candidates.append({"ean": ean, "image": "/assets/" + image,
+                           **{key: str(slide.get(key) or "")[:1000] for key in ("artist", "title", "text")}})
+    with read_catalog() as conn:
+        ids = set(conn.execute(text("SELECT p.ean" + JOIN + " WHERE p.ean = ANY(CAST(:ids AS text[]))"),
+                               {"ids": [s["ean"] for s in candidates]}).scalars())
+    return {"enabled": True, "title": str(config.get("title") or "Новинки")[:200],
+            "text": str(config.get("text") or "")[:2000],
+            "autoplay": config.get("autoplay") is True,
+            "intervalSeconds": min(20, max(3, int(config.get("intervalSeconds") or 5))),
+            "slides": [s for s in candidates if s["ean"] in ids]}
 
 @router.get("/item")
 def item(response: Response, ean: str = Query(..., min_length=1, max_length=240)):

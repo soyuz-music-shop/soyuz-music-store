@@ -1,0 +1,30 @@
+{
+  "enabled": true,
+  "title": "Свежие поступления",
+  "text": "",
+  "autoplay": true,
+  "intervalSeconds": 5,
+  "slides": [
+    {
+      "ean": "2000095762164",
+      "image": "new-release-images/2000095762164-1794219377892-0.webp",
+      "artist": "Глеб Самойлоff & The Matrixx",
+      "title": "Треш (2LP Red)",
+      "text": ""
+    },
+    {
+      "ean": "4610297810532",
+      "image": "new-release-images/4610297810532-1794219377892-1.webp",
+      "artist": "Глеб Самойлоff & The Matrixx",
+      "title": "Треш (2LP Black)",
+      "text": ""
+    },
+    {
+      "ean": "4610297810938",
+      "image": "new-release-images/4610297810938-1794219377892-2.webp",
+      "artist": "Глеб Самойлоff & The Matrixx",
+      "title": "Треш (MC black)",
+      "text": ""
+    }
+  ]
+}

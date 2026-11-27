@@ -16,3 +16,7 @@ button:disabled {cursor:not-allowed}
 .product-card .product-info > .chips + .price-row { margin-top:0; }
 .product-card .product-info > .buy-button { flex-shrink:0; min-height:3.5em; line-height:1.25; }
 @media (max-width:600px) { .product-card .product-info > .buy-button { min-height:4em; } }
+
+/* M334: actual page length controls the grid even on a partial final page. */
+#featured-items { grid-template-columns: repeat(var(--featured-visible-columns, 1), minmax(0,1fr)); }
+.featured-item[data-featured-ean] { cursor:pointer; }

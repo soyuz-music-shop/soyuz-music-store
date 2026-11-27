@@ -253,7 +253,63 @@ function displayName(x){
   $('#filter-toggle').addEventListener('click',()=>{const f=$('#filters');const open=f.classList.toggle('catalog-filter-open');$('#filter-toggle').setAttribute('aria-expanded',String(open));});
   $('[data-reset-filters]').addEventListener('click',()=>{resetFilters();$('#sort-select').value='new';load();});
   for(const el of document.querySelectorAll('[data-category-jump]:not(:disabled)'))el.addEventListener('click',()=>{const radio=document.querySelector('input[name=category][value="'+el.dataset.categoryJump+'"]');if(radio){radio.checked=true;load();$('#catalog').scrollIntoView();}});
-  for(const el of document.querySelectorAll('[data-featured-ean]')){el.setAttribute('role','button');el.tabIndex=0;el.addEventListener('click',()=>openDetail(el.dataset.featuredEan));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(el.dataset.featuredEan);}});}
+  function initFeatured(config){
+    const section=$('#new-carousel'),track=$('#featured-items'),dots=$('#featured-pagination'),prev=$('#featured-prev'),nextButton=$('#featured-next');
+    const slides=(Array.isArray(config.slides)?config.slides:[]).filter(s=>s&&typeof s.ean==='string'&&typeof s.image==='string'&&/^\/assets\/new-release-images\/[a-zA-Z0-9._-]+\.webp$/.test(s.image));
+    if(!config.enabled||!slides.length){section.hidden=true;return;}
+    $('#featured-carousel-title').textContent=config.title||'Новинки';
+    const subtitle=$('#featured-carousel-subtitle');subtitle.textContent=config.text||'';subtitle.hidden=!config.text;
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+    const pageSize=()=>innerWidth<700?1:innerWidth<960?2:3;
+    let size=pageSize(),page=0,timer=null,hover=false,start=null,ignoreUntil=0;
+    const pages=()=>Math.ceil(slides.length/size);
+    function stop(){if(timer!==null){clearTimeout(timer);timer=null;}}
+    function schedule(){
+      stop();
+      if(config.autoplay&&pages()>1&&!reduced.matches&&!document.hidden&&!hover&&!section.contains(document.activeElement)&&!dialog.open){
+        timer=setTimeout(()=>{page=(page+1)%pages();render();},Math.min(20,Math.max(3,Number(config.intervalSeconds)||5))*1000);
+      }
+    }
+    function render(){
+      const focused=document.activeElement,focusedPage=focused?.dataset?.featuredPage,focusedEan=focused?.dataset?.featuredEan;
+      page=Math.max(0,Math.min(page,pages()-1));
+      const shown=slides.slice(page*size,(page+1)*size);
+      track.style.setProperty('--featured-visible-columns',String(shown.length));track.dataset.visibleCount=String(shown.length);
+      track.replaceChildren();
+      for(const s of shown){
+        const b=make('button','featured-item');b.type='button';b.dataset.featuredEan=s.ean;b.setAttribute('aria-label','Открыть карточку: '+[s.artist,s.title].filter(Boolean).join(' — '));
+        const imageBox=make('span','featured-image'),picture=make('picture'),img=make('img');img.src=s.image;img.alt='';img.loading='lazy';img.decoding='async';picture.append(img);imageBox.append(picture);
+        const copy=make('span','featured-item-text');copy.append(make('strong','featured-item-artist',s.artist||''),make('span','featured-item-album',s.title||''));
+        if(s.text)copy.append(make('span','featured-item-description',s.text));b.append(imageBox,copy);track.append(b);
+      }
+      dots.replaceChildren();
+      for(let i=0;i<pages();i++){
+        const b=make('button','featured-dot');b.type='button';b.dataset.featuredPage=String(i);b.setAttribute('aria-label','Страница '+(i+1));b.setAttribute('aria-current',String(i===page));dots.append(b);
+      }
+      prev.disabled=nextButton.disabled=pages()<2;
+      if(focusedPage!==undefined)dots.children[Math.min(Number(focusedPage),pages()-1)]?.focus({preventScroll:true});
+      if(focusedEan!==undefined){const replacement=[...track.children].find(b=>b.dataset.featuredEan===focusedEan);(replacement||track.firstElementChild)?.focus({preventScroll:true});}
+      schedule();
+    }
+    function move(delta){page=(page+delta+pages())%pages();render();}
+    prev.addEventListener('click',()=>move(-1));nextButton.addEventListener('click',()=>move(1));
+    dots.addEventListener('click',e=>{const b=e.target.closest('[data-featured-page]');if(b){page=Number(b.dataset.featuredPage);render();}});
+    track.addEventListener('click',e=>{if(Date.now()<ignoreUntil){e.preventDefault();return;}const b=e.target.closest('[data-featured-ean]');if(b)openDetail(b.dataset.featuredEan);});
+    track.addEventListener('touchstart',e=>{start=e.touches.length===1?{x:e.touches[0].clientX,y:e.touches[0].clientY}:null;stop();},{passive:true});
+    track.addEventListener('touchcancel',()=>{start=null;schedule();},{passive:true});
+    track.addEventListener('touchend',e=>{
+      if(!start||e.changedTouches.length!==1){start=null;schedule();return;}
+      const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;start=null;
+      if(pages()>1&&Math.abs(dx)>=45&&Math.abs(dx)>=Math.abs(dy)*1.3){ignoreUntil=Date.now()+450;move(dx<0?1:-1);}else schedule();
+    },{passive:true});
+    section.addEventListener('mouseenter',()=>{hover=true;stop();});
+    section.addEventListener('mouseleave',()=>{hover=false;schedule();});
+    section.addEventListener('focusin',stop);section.addEventListener('focusout',e=>{if(!section.contains(e.relatedTarget))setTimeout(schedule,0);});
+    document.addEventListener('visibilitychange',schedule);reduced.addEventListener('change',schedule);dialog.addEventListener('close',schedule);
+    window.addEventListener('resize',()=>{const n=pageSize();if(n!==size){page=Math.floor(page*size/n);size=n;render();}});
+    section.hidden=false;render();
+  }
+  get('/featured').then(initFeatured).catch(()=>{$('#new-carousel').hidden=true;});
   get('/summary').then(s=>{if(s.sales_enabled!==false||s.data_mode!=='snapshot')throw Error('Unexpected summary');$('#hero-count').textContent=s.total+' товаров';for(const el of document.querySelectorAll('[data-count]'))el.textContent=el.dataset.count==='all'?s.total:(s.categories[el.dataset.count]||0);
     if(Number.isSafeInteger(s.max_price_minor)&&s.max_price_minor>=0){
       const unrestricted=Number(range.value)===Number(range.max);
