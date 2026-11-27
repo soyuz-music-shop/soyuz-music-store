@@ -133,38 +133,54 @@ function descriptionHtml(value) {
     </div>`;
 }
 
-  function displayName(x){
-    const tidy=v=>String(v||'').replace(/\s+/g,' ').trim();
-    const raw=tidy(x.name),hint=tidy(x.artist);
-    const fold=v=>v.toLocaleLowerCase('ru').replace(/\u0451/g,'\u0435');
-    let artist='',title='';
-    // A structured artist is preferred only when it matches the full name boundary.
-    // A colon is never a separator: it belongs to the album or artist name.
-    if(hint&&fold(raw).startsWith(fold(hint))){
-      const rest=raw.slice(hint.length);
-      const boundary=/^(?:\.\s+|\s+[—–-]\s+)/.exec(rest);
-      if(boundary&&rest.slice(boundary[0].length).trim()){
-        artist=raw.slice(0,hint.length);title=rest.slice(boundary[0].length).trim();
-      }else if(!rest){artist=raw;}
-      else if(/^\s*\(/.test(rest)){artist=raw;}
-    }
-    if(!artist){
-      // Use the first eligible separator before packaging; do not split at colons.
-      const head=raw.split(/\s+\(/,1)[0];
-      const candidates=[...head.matchAll(/\.\s+|\s+[—–-]\s+/g)];
-      for(const m of candidates){
-        const left=raw.slice(0,m.index).trim(),right=raw.slice(m.index+m[0].length).trim();
-        if(!left||!right)continue;
-        // Avoid common initial/abbreviation prefixes such as "Dr. Dre" or "A. B.".
-        if(m[0].startsWith('.')&&/(?:^|\s)(?:[A-Za-zА-Яа-я]|Dr|Mr|Mrs|Ms|St|DJ|MC)$/iu.test(left))continue;
-        artist=left;title=right;break;
-      }
-    }
-    if(!artist){artist=raw;title='';}
-    const split=v=>{const i=v.indexOf('(');return i>0?[v.slice(0,i).trim(),v.slice(i).trim()]:[v,''];};
-    const a=split(artist),t=split(title);
-    return {artist:a[0],title:t[0],details:[a[1],t[1]].filter(Boolean).join(' ')};
+function displayName(x){
+  const tidy=v=>String(v||'').replace(/\s+/gu,' ').trim();
+  const fold=v=>tidy(v).toLocaleLowerCase('ru').replace(/\u0451/g,'\u0435');
+  const raw=tidy(x.name);
+  // Only strip terminal, balanced parentheses with explicit carrier/edition metadata.
+  const format=/^(?:\d*\s*(?:LP|CD|MC|DVD|BD|SACD|Blu[ -]?ray|EP|SP)(?=$|[\s/+,.\d-]|jewel|digi|card|box)|компакт[ -]?диск|аудиокассета|винил|книга|диск\b|бокс[ -]?сет|(?:белая|черная|цветная|красная|прозрачная) кассета)/iu;
+  let body=raw,details='';
+  for(;;){
+    if(!body.endsWith(')'))break;
+    let depth=0,i=body.length-1;
+    for(;i>=0;i--){if(body[i]===')')depth++;else if(body[i]==='('&&--depth===0)break;}
+    if(i<=0||!format.test(body.slice(i+1,-1).trim()))break;
+    details=[body.slice(i),details].filter(Boolean).join(' ');body=body.slice(0,i).trimEnd();
   }
+  // Confirmed names without an explicit separator, not a generic split on ! or ?.
+  const confirmed=['Forward Russia!','Где Фантом?','Пахом Вам Перезвонит','Blind Guardian Twilight Orchestra','AIR French Band','Herman Frank','Nagart','Телевизор','Katatonia','Lord Of The Lost','Лаэртский и Карабас','А. Ф. Скляр и Ва-Банкъ','W.A.S.P.','S.Y.P.H.'];
+  const hints=[...String(x.artist||'').split(' · '),...confirmed].map(tidy).filter(Boolean).sort((a,b)=>b.length-a.length);
+  const parts=[];let depth=0;
+  for(let i=0;i<body.length;i++){
+    const ch=body[i];if(ch==='('){depth++;continue;}if(ch===')'){depth=Math.max(0,depth-1);continue;}if(depth)continue;
+    const left=body.slice(0,i).trimEnd();
+    if(ch==='.'&&/\s/u.test(body[i+1]||'')&&left&&(!left.endsWith('.')||(/(?:[\p{L}]\.){2,}$/u.test(left)&&!left.endsWith('..')))&&!/^(?:\.|\s)*$/u.test(left)&&!/(?:^|\s)(?:[\p{L}]|Dr|Mr|Mrs|Ms|St|DJ|MC|Vol|No|Op|Pt|ч|им)$/iu.test(left)&&!/(?:^|\s)(?:[\p{L}]\.)+[\p{L}]$/u.test(left)){
+      parts.push({i,j:i+1,kind:'dot'});
+    }else if(/[—–-]/u.test(ch)&&/\s/u.test(body[i-1]||'')&&/\s/u.test(body[i+1]||''))parts.push({i,j:i+1,kind:'dash'});
+  }
+  const split=(i,j,reason)=>({artist:body.slice(0,i).trim(),title:body.slice(j).trim(),details,reason});
+  for(const hint of hints){
+    if(!fold(body).startsWith(fold(hint)))continue;
+    const rest=body.slice(hint.length);
+    if(!rest) return {artist:body,title:'',details,reason:'artist_only'};
+    const explicit=/^(?:\s*\.\s*|\s*[—–-]\s*)/u.exec(rest);
+    // Do not swallow the initial dot of a title such as ...And The Circus Leaves Town.
+    if(explicit&&rest.slice(explicit[0].length).trim()&&!/^\.{2,}/u.test(rest.trimStart()))return split(hint.length,hint.length+explicit[0].length,'hint_delimiter');
+    if(/^\s+/u.test(rest)&&rest.trim()&&!/^(?:и|and|with|feat\.?|featuring|&|\+|\/|\()/iu.test(rest.trimStart())){
+      const earlier=parts.find(p=>p.kind==='dot');
+      // A longer artist credit (e.g. "A & B. Album") should take precedence over a partial hint.
+      if(!earlier||earlier.i>=hint.length&&!/^(?:[^.]*\s)?(?:&|\band\b|\bfeat\b|\bи\b)\s/iu.test(body.slice(hint.length,earlier.i).trim()))return split(hint.length,hint.length,'hint_space');
+    }
+  }
+  const dot=parts.find(p=>p.kind==='dot');
+  const book=details&&/^\(книга/iu.test(details);
+  if(book&&!dot){const dash=parts.find(p=>p.kind==='dash');if(dash&&body.slice(dash.j).trim())return split(dash.i,dash.j,'book_dash');}
+  // Compilations / numbered titles must not turn a subtitle into a fictional artist.
+  const compilation=/^(?:разные исполнители|various(?: artists)?)$/iu.test(tidy(x.artist))&&!/^various\.\s/iu.test(body);
+  if(dot&&!compilation&&body.slice(dot.j).trim())return split(dot.i,dot.j,'dot');
+  // An unconfirmed dash is often part of a compilation title: keep it intact.
+  return {artist:body,title:'',details,reason:'unsplit'};
+}
   const categories={vinyl:'Винил',cd:'CD',tape:'Кассета',book:'Книга',movie:'Фильм',other:'Товар'};
   const detailMoney=v=>Number.isSafeInteger(v)&&v>=0?new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:v%100?2:0,maximumFractionDigits:2}).format(v/100):'Цена уточняется';
   async function openDetail(ean){
