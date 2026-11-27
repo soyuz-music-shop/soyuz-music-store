@@ -134,15 +134,30 @@ function descriptionHtml(value) {
 }
 
   function displayName(x){
-    const raw=String(x.name||'').trim(), hint=String(x.artist||'').trim();
-    let artist='',title=raw;
-    if(hint&&raw.toLocaleLowerCase('ru').startsWith(hint.toLocaleLowerCase('ru'))){
+    const tidy=v=>String(v||'').replace(/\s+/g,' ').trim();
+    const raw=tidy(x.name),hint=tidy(x.artist);
+    const fold=v=>v.toLocaleLowerCase('ru').replace(/\u0451/g,'\u0435');
+    let artist='',title='';
+    // A structured artist is preferred only when it matches the full name boundary.
+    // A colon is never a separator: it belongs to the album or artist name.
+    if(hint&&fold(raw).startsWith(fold(hint))){
       const rest=raw.slice(hint.length);
-      if(!rest||/^[\s.:—–-]/.test(rest)){artist=hint;title=rest.replace(/^[\s.:—–-]+/,'');}
+      const boundary=/^(?:\.\s+|\s+[—–-]\s+)/.exec(rest);
+      if(boundary&&rest.slice(boundary[0].length).trim()){
+        artist=raw.slice(0,hint.length);title=rest.slice(boundary[0].length).trim();
+      }else if(!rest){artist=raw;}
+      else if(/^\s*\(/.test(rest)){artist=raw;}
     }
     if(!artist){
-      for(const re of [/\s+[—–-]\s+/,/\s*:\s+/,/\.\s+/]){
-        const m=re.exec(raw);if(m&&m.index>0){artist=raw.slice(0,m.index).trim();title=raw.slice(m.index+m[0].length).trim();break;}
+      // Use the first eligible separator before packaging; do not split at colons.
+      const head=raw.split(/\s+\(/,1)[0];
+      const candidates=[...head.matchAll(/\.\s+|\s+[—–-]\s+/g)];
+      for(const m of candidates){
+        const left=raw.slice(0,m.index).trim(),right=raw.slice(m.index+m[0].length).trim();
+        if(!left||!right)continue;
+        // Avoid common initial/abbreviation prefixes such as "Dr. Dre" or "A. B.".
+        if(m[0].startsWith('.')&&/(?:^|\s)(?:[A-Za-zА-Яа-я]|Dr|Mr|Mrs|Ms|St|DJ|MC)$/iu.test(left))continue;
+        artist=left;title=right;break;
       }
     }
     if(!artist){artist=raw;title='';}

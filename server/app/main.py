@@ -25,12 +25,12 @@ def readiness():
 
 @app.get('/health/live')
 def live():
-    return {'status': 'ok', 'release': 'M327', 'sales_enabled': False}
+    return {'status': 'ok', 'release': 'M330', 'sales_enabled': False}
 
 @app.get('/health/ready')
 def ready():
     ok = readiness()
-    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M327', 'sales_enabled': False}, status_code=200 if ok else 503)
+    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M330', 'sales_enabled': False}, status_code=200 if ok else 503)
 
 STOREFRONT = Path(__file__).resolve().parent / 'storefront'
 app.mount('/assets', StaticFiles(directory=STOREFRONT / 'assets'), name='storefront-assets')
