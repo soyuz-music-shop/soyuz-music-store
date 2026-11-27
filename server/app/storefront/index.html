@@ -18,7 +18,7 @@
   
   <link rel="stylesheet" href="/assets/preview.css?v=331">
   <script src="/assets/preview.js?v=327" defer></script>
-  <script src="/assets/catalog-ui.js?v=331" defer></script>
+  <script src="/assets/catalog-ui.js?v=332" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -106,7 +106,7 @@
       <button class="category-card vinyl-card" data-category-jump="vinyl" aria-label="Открыть винил"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
       <button class="category-card cd-card" data-category-jump="cd" aria-label="Открыть CD"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
       <button class="category-card tape-card" data-category-jump="tape" aria-label="Открыть кассеты"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
-      <button class="category-card book-card" data-category-jump="book" disabled title="Категория пока не классифицирована" aria-label="Открыть книги"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
+      <button class="category-card book-card" data-category-jump="book" aria-label="Открыть книги"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
     </section>
 
     <section class="about" id="about" aria-labelledby="about-title">
@@ -152,13 +152,19 @@
             <label><input type="radio" name="category" value="vinyl"> Винил <span data-count="vinyl">0</span></label>
             <label><input type="radio" name="category" value="cd"> CD <span data-count="cd">0</span></label>
             <label><input type="radio" name="category" value="tape"> Кассеты <span data-count="tape">0</span></label>
-            <label><input type="radio" name="category" value="book" disabled> Книги (уточняется)</label>
+            <label><input type="radio" name="category" value="book"> Книги <span data-count="book">0</span></label>
             <label><input type="radio" name="category" value="other"> Без категории <span data-count="other">0</span></label>
             <label><input type="radio" name="category" value="movie"> Фильмы <span data-count="movie">0</span></label>
           </div>
           <div class="filter-group">
+            <h3>Издание</h3>
+            <label><input type="radio" name="edition" value="all" checked> Все издания</label>
+            <label><input type="radio" name="edition" value="import"> Импортное издание</label>
+            <label><input type="radio" name="edition" value="russian"> Российское издание</label>
+          </div>
+          <div class="filter-group">
             <h3>Наличие</h3>
-            <label><input id="stock-only" type="checkbox"> В наличии по снимку</label>
+            <label><input id="stock-only" type="checkbox"> Только в наличии</label>
           </div>
           <div class="filter-group">
             <h3>Цена</h3>
