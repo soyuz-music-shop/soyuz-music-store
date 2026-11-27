@@ -1,0 +1,1 @@
+SOYUZ Store server foundation M296. Sales disabled. Production Compose, credentials, database, media and operational configuration are stored on the server, not in this directory. Deployment is not enabled yet. The legacy frontend in the repository root remains a migration reference.
