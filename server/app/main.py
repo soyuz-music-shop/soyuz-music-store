@@ -4,9 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from sqlalchemy import text
 from app.db import engine
+from app.catalog import router as catalog_router
 
 app = FastAPI(title='SOYUZ Store foundation', docs_url=None, redoc_url=None, openapi_url=None)
 REVISION = '0001_foundation'
+app.include_router(catalog_router)
 
 def readiness():
     db = engine()
@@ -23,12 +25,12 @@ def readiness():
 
 @app.get('/health/live')
 def live():
-    return {'status': 'ok', 'release': 'M316', 'sales_enabled': False}
+    return {'status': 'ok', 'release': 'M321', 'sales_enabled': False}
 
 @app.get('/health/ready')
 def ready():
     ok = readiness()
-    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M316', 'sales_enabled': False}, status_code=200 if ok else 503)
+    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M321', 'sales_enabled': False}, status_code=200 if ok else 503)
 
 STOREFRONT = Path(__file__).resolve().parent / 'storefront'
 app.mount('/assets', StaticFiles(directory=STOREFRONT / 'assets'), name='storefront-assets')
