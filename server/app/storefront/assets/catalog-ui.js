@@ -72,8 +72,41 @@
     }finally{if(current===sequence){busy=false;more.disabled=false;}}
   }
   const safe = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+function descriptionPlainText(value) {
+  const raw = String(value ?? '').replace(/\r\n?/g, '\n');
+  // Parse in inert template only. Never insert imported nodes or attributes into the live DOM.
+  const markup = /<\/?[a-z][a-z0-9:-]*(?:\s[^<>]*?)?\s*\/?>|<!--/i;
+  const entities = /&(?:#\d+|#x[0-9a-f]+|[a-z][a-z0-9]+);/i;
+  const blocks = new Set(['P','DIV','LI','UL','OL','SECTION','ARTICLE','H1','H2','H3','H4','H5','H6','TR','BLOCKQUOTE','PRE','HR']);
+  const ignored = new Set(['SCRIPT','STYLE','TEMPLATE','IFRAME','OBJECT','EMBED','SVG','MATH','NOSCRIPT','HEAD']);
+  function extract(input) {
+    const t = document.createElement('template');
+    t.innerHTML = input;
+    const out = [];
+    function visit(n) {
+      if(n.nodeType === 3){out.push(n.nodeValue);return;}
+      if(n.nodeType !== 1 && n.nodeType !== 11)return;
+      const tag = n.nodeName.toUpperCase();
+      if(ignored.has(tag))return;
+      if(tag==='BR'){out.push('\n');return;}
+      if(blocks.has(tag))out.push('\n');
+      for(const child of n.childNodes)visit(child);
+      if(blocks.has(tag))out.push('\n');
+    }
+    visit(t.content);
+    return out.join('');
+  }
+  let clean = raw;
+  if(markup.test(raw) || entities.test(raw)) {
+    clean = extract(raw);
+    // Some upstream descriptions contain escaped HTML line-break tags.
+    if(!markup.test(raw) && /<\/?(?:br|p|div|li|ul|ol|strong|b|em|i)(?:\s[^<>]*?)?\s*\/?>/i.test(clean))clean=extract(clean);
+  }
+  return clean.replace(/\u00a0/g,' ').split('\n').map(s=>s.trim()).filter(Boolean).join('\n');
+}
+
 function descriptionHtml(value) {
-  const raw = String(value || '').trim();
+  const raw = descriptionPlainText(value).trim();
   const text = raw.replace(/\s+/g, ' ').trim();
   if (!text) return '';
   const heading = raw.match(/трек\s*-?\s*лист\s*:?\s*/i);
