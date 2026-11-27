@@ -9,7 +9,7 @@ class FoundationTests(unittest.TestCase):
         self.assertFalse(c.get('/health/live').json()['sales_enabled'])
         self.assertEqual(c.post('/api/v1/orders', json={}).status_code, 404)
         self.assertEqual(c.get('/docs').status_code, 404)
-        self.assertIn('M296', c.get('/').text)
+        self.assertIn('M314', c.get('/').text)
     def test_ready(self):
         c = TestClient(app)
         with patch('app.main.readiness', return_value=True):
