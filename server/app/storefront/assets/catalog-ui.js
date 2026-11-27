@@ -250,7 +250,7 @@ function displayName(x){
   for(const el of document.querySelectorAll('input[name=category]:not(:disabled),input[name=edition],#stock-only,#sort-select'))el.addEventListener('change',()=>load());
   range.addEventListener('input',()=>$('#price-output').textContent=Number(range.value)===Number(range.max)?'Любая цена':'до '+currency.format(Number(range.value)));
   range.addEventListener('change',()=>load());more.addEventListener('click',()=>load(false));
-  $('#filter-toggle').addEventListener('click',()=>{const f=$('#filters');const open=f.classList.toggle('catalog-filter-open');$('#filter-toggle').setAttribute('aria-expanded',String(open));});
+  $('#filter-toggle').addEventListener('click',()=>{const f=$('#filters');const open=f.classList.toggle('open');$('#filter-toggle').setAttribute('aria-expanded',String(open));});
   $('[data-reset-filters]').addEventListener('click',()=>{resetFilters();$('#sort-select').value='new';load();});
   for(const el of document.querySelectorAll('[data-category-jump]:not(:disabled)'))el.addEventListener('click',()=>{const radio=document.querySelector('input[name=category][value="'+el.dataset.categoryJump+'"]');if(radio){radio.checked=true;load();$('#catalog').scrollIntoView();}});
   function initFeatured(config){
@@ -260,7 +260,7 @@ function displayName(x){
     $('#featured-carousel-title').textContent=config.title||'Новинки';
     const subtitle=$('#featured-carousel-subtitle');subtitle.textContent=config.text||'';subtitle.hidden=!config.text;
     const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-    const pageSize=()=>innerWidth<700?1:innerWidth<960?2:3;
+    const pageSize=()=>matchMedia('(max-width: 700px)').matches?1:matchMedia('(max-width: 960px)').matches?2:3;
     let size=pageSize(),page=0,timer=null,hover=false,start=null,ignoreUntil=0;
     const pages=()=>Math.ceil(slides.length/size);
     function stop(){if(timer!==null){clearTimeout(timer);timer=null;}}

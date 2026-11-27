@@ -19,3 +19,11 @@ media.addEventListener('change',()=>{if(!explicit)theme(media.matches?'dark':'li
 const menu=q('.menu-toggle');menu.addEventListener('click',()=>{const open=menu.getAttribute('aria-expanded')!=='true';menu.setAttribute('aria-expanded',String(open));q('#main-nav').classList.toggle('open',open);q('#main-nav').classList.toggle('is-open',open);});
 q('#main-nav').addEventListener('click',()=>{menu.setAttribute('aria-expanded','false');q('#main-nav').classList.remove('open','is-open');});
 q('#year').textContent=String(new Date().getFullYear());
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape' && menu.getAttribute('aria-expanded')==='true'){
+    menu.setAttribute('aria-expanded','false');
+    q('#main-nav').classList.remove('open','is-open');
+    menu.focus();
+  }
+});
+

@@ -11,14 +11,17 @@
   <link rel="apple-touch-icon" href="/assets/logo.png">
   
   <link rel="preload" as="image" type="image/webp" href="/assets/hero-new-shelf.webp" media="(min-width: 901px)" fetchpriority="high">
+  <link rel="preload" href="/assets/fonts/manrope-variable.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="/assets/fonts/manrope.css?v=335">
+  <script src="/assets/theme-init.js?v=335"></script>
   <link rel="stylesheet" href="/assets/styles.css">
   
   
   
   
-  <link rel="stylesheet" href="/assets/preview.css?v=334">
-  <script src="/assets/preview.js?v=327" defer></script>
-  <script src="/assets/catalog-ui.js?v=334" defer></script>
+  <link rel="stylesheet" href="/assets/preview.css?v=335">
+  <script src="/assets/preview.js?v=335" defer></script>
+  <script src="/assets/catalog-ui.js?v=335" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -34,7 +37,7 @@
     <form class="header-search" id="search-form" role="search">
       <span class="sr-only">Поиск по каталогу</span>
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
-      <input id="header-search" type="search" placeholder="Поиск по названию, исполнителю или EAN" autocomplete="off" maxlength="160" aria-label="Поиск по каталогу">
+      <input id="header-search" type="search" placeholder="Поиск по каталогу…" autocomplete="off" maxlength="160" aria-label="Поиск по каталогу">
       <button class="search-button" type="submit">Поиск</button>
     </form>
     <button class="icon-button account-button" id="account-button" type="button" aria-label="Войти или зарегистрироваться" disabled title="Функция пока не подключена">
@@ -136,7 +139,7 @@
               <option value="title">По названию</option>
             </select>
           </label>
-          <button class="filter-toggle" id="filter-toggle" type="button">Фильтры</button>
+          <button class="filter-toggle" id="filter-toggle" type="button" aria-controls="filters" aria-expanded="false">Фильтры</button>
         </div>
       </div>
 

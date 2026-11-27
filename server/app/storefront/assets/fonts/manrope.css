@@ -1,0 +1,7 @@
+@font-face {
+  font-family: Manrope;
+  src: url("/assets/fonts/manrope-variable.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
