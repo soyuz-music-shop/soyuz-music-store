@@ -1,0 +1,34 @@
+name: Store deploy request
+on:
+  push:
+    branches:
+      - migration/server-199
+    paths:
+      - 'server/**'
+      - '.github/workflows/store-deploy-request.yml'
+permissions:
+  contents: write
+concurrency:
+  group: store-deploy-request
+  cancel-in-progress: false
+jobs:
+  request:
+    if: github.ref == 'refs/heads/migration/server-199'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Publish immutable commit request (no server access)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REQUEST_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$REQUEST_SHA" =~ ^[0-9a-f]{40}$ ]]
+          tag="store-deploy-request-$REQUEST_SHA"
+          if ! gh api --method POST "repos/$GH_REPO/git/refs" -f ref="refs/tags/$tag" -f sha="$REQUEST_SHA"; then
+            actual=$(gh api "repos/$GH_REPO/git/ref/tags/$tag" --jq '.object.sha')
+            [[ "$actual" == "$REQUEST_SHA" ]]
+          fi
+          echo "STORE_DEPLOY_REQUEST_PUBLISHED $REQUEST_SHA"
