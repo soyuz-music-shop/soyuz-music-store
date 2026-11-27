@@ -20,10 +20,10 @@
     if(!res.ok)throw Error('HTTP '+res.status); return res.json();
   }
   let sequence=0, controller, next=null, busy=false, detailSeq=0;
-  let ids=new Set(), activeQuery='';
+  let ids=new Set(), activeQuery='', activeArtist='', artistExact=false, artistTimer;
   const status = text => $('#catalog-snapshot').textContent=text;
   function params(offset){
-    const p={q:activeQuery,category:$('input[name=category]:checked').value,
+    const p={q:activeQuery,artist:activeArtist,artist_exact:artistExact,category:$('input[name=category]:checked').value,
       edition:$('input[name=edition]:checked').value,in_stock:$('#stock-only').checked,sort:$('#sort-select').value,limit:48,offset};
     if(Number(range.value)<Number(range.max))p.max_price_minor=Number(range.value)*100;
     return p;
@@ -135,53 +135,9 @@ function descriptionHtml(value) {
 }
 
 function displayName(x){
-  const tidy=v=>String(v||'').replace(/\s+/gu,' ').trim();
-  const fold=v=>tidy(v).toLocaleLowerCase('ru').replace(/\u0451/g,'\u0435');
-  const raw=tidy(x.name);
-  // Only strip terminal, balanced parentheses with explicit carrier/edition metadata.
-  const format=/^(?:\d*\s*(?:LP|CD|MC|DVD|BD|SACD|Blu[ -]?ray|EP|SP)(?=$|[\s/+,.\d-]|jewel|digi|card|box)|компакт[ -]?диск|аудиокассета|винил|книга|диск\b|бокс[ -]?сет|(?:белая|черная|цветная|красная|прозрачная) кассета)/iu;
-  let body=raw,details='';
-  for(;;){
-    if(!body.endsWith(')'))break;
-    let depth=0,i=body.length-1;
-    for(;i>=0;i--){if(body[i]===')')depth++;else if(body[i]==='('&&--depth===0)break;}
-    if(i<=0||!format.test(body.slice(i+1,-1).trim()))break;
-    details=[body.slice(i),details].filter(Boolean).join(' ');body=body.slice(0,i).trimEnd();
+    if(x.display && ['artist','title','details'].every(k=>typeof x.display[k]==='string'))return x.display;
+    return {artist:String(x.name||''),title:'',details:''};
   }
-  // Confirmed names without an explicit separator, not a generic split on ! or ?.
-  const confirmed=['Forward Russia!','Где Фантом?','Пахом Вам Перезвонит','Blind Guardian Twilight Orchestra','AIR French Band','Herman Frank','Nagart','Телевизор','Katatonia','Lord Of The Lost','Лаэртский и Карабас','А. Ф. Скляр и Ва-Банкъ','W.A.S.P.','S.Y.P.H.'];
-  const hints=[...String(x.artist||'').split(' · '),...confirmed].map(tidy).filter(Boolean).sort((a,b)=>b.length-a.length);
-  const parts=[];let depth=0;
-  for(let i=0;i<body.length;i++){
-    const ch=body[i];if(ch==='('){depth++;continue;}if(ch===')'){depth=Math.max(0,depth-1);continue;}if(depth)continue;
-    const left=body.slice(0,i).trimEnd();
-    if(ch==='.'&&/\s/u.test(body[i+1]||'')&&left&&(!left.endsWith('.')||(/(?:[\p{L}]\.){2,}$/u.test(left)&&!left.endsWith('..')))&&!/^(?:\.|\s)*$/u.test(left)&&!/(?:^|\s)(?:[\p{L}]|Dr|Mr|Mrs|Ms|St|DJ|MC|Vol|No|Op|Pt|ч|им)$/iu.test(left)&&!/(?:^|\s)(?:[\p{L}]\.)+[\p{L}]$/u.test(left)){
-      parts.push({i,j:i+1,kind:'dot'});
-    }else if(/[—–-]/u.test(ch)&&/\s/u.test(body[i-1]||'')&&/\s/u.test(body[i+1]||''))parts.push({i,j:i+1,kind:'dash'});
-  }
-  const split=(i,j,reason)=>({artist:body.slice(0,i).trim(),title:body.slice(j).trim(),details,reason});
-  for(const hint of hints){
-    if(!fold(body).startsWith(fold(hint)))continue;
-    const rest=body.slice(hint.length);
-    if(!rest) return {artist:body,title:'',details,reason:'artist_only'};
-    const explicit=/^(?:\s*\.\s*|\s*[—–-]\s*)/u.exec(rest);
-    // Do not swallow the initial dot of a title such as ...And The Circus Leaves Town.
-    if(explicit&&rest.slice(explicit[0].length).trim()&&!/^\.{2,}/u.test(rest.trimStart()))return split(hint.length,hint.length+explicit[0].length,'hint_delimiter');
-    if(/^\s+/u.test(rest)&&rest.trim()&&!/^(?:и|and|with|feat\.?|featuring|&|\+|\/|\()/iu.test(rest.trimStart())){
-      const earlier=parts.find(p=>p.kind==='dot');
-      // A longer artist credit (e.g. "A & B. Album") should take precedence over a partial hint.
-      if(!earlier||earlier.i>=hint.length&&!/^(?:[^.]*\s)?(?:&|\band\b|\bfeat\b|\bи\b)\s/iu.test(body.slice(hint.length,earlier.i).trim()))return split(hint.length,hint.length,'hint_space');
-    }
-  }
-  const dot=parts.find(p=>p.kind==='dot');
-  const book=details&&/^\(книга/iu.test(details);
-  if(book&&!dot){const dash=parts.find(p=>p.kind==='dash');if(dash&&body.slice(dash.j).trim())return split(dash.i,dash.j,'book_dash');}
-  // Compilations / numbered titles must not turn a subtitle into a fictional artist.
-  const compilation=/^(?:разные исполнители|various(?: artists)?)$/iu.test(tidy(x.artist))&&!/^various\.\s/iu.test(body);
-  if(dot&&!compilation&&body.slice(dot.j).trim())return split(dot.i,dot.j,'dot');
-  // An unconfirmed dash is often part of a compilation title: keep it intact.
-  return {artist:body,title:'',details,reason:'unsplit'};
-}
   const categories={vinyl:'Винил',cd:'CD',tape:'Кассета',book:'Книга',movie:'Фильм',other:'Товар'};
   const detailMoney=v=>Number.isSafeInteger(v)&&v>=0?new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:v%100?2:0,maximumFractionDigits:2}).format(v/100):'Цена уточняется';
   async function openDetail(ean){
@@ -232,7 +188,57 @@ function displayName(x){
     }catch(e){if(seq===detailSeq&&dialog.open)detail.replaceChildren(make('p','loading','Карточка пока недоступна.'));}
   }
   $('#detail-close').addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>{detailSeq++;});
+  const artistInput=$('#artist-filter'), artistDropdown=$('#artist-dropdown');
+  const artistKey=v=>v.trim().toLocaleLowerCase('ru').replace(/\u0451/g,'\u0435').replace(/\s+/g,' ');
+  let artistNames=null, artistError=false, artistRequest=null;
+  function showArtist(open){
+    artistDropdown.hidden=!open;artistInput.setAttribute('aria-expanded',String(open));
+  }
+  function renderArtists(){
+    artistDropdown.replaceChildren();
+    if(artistNames===null){
+      artistDropdown.append(make('p','artist-empty',artistError?'Не удалось загрузить список. Повторите поиск.':'Загружаем список…'));return;
+    }
+    const query=artistKey(artistInput.value),groups=new Map();
+    const rank=x=>/[А-Я]/u.test(x)?0:/[A-Z]/u.test(x)?1:/[0-9]/u.test(x)?2:3;
+    for(const name of artistNames){
+      if(query&&!artistKey(name).includes(query))continue;
+      const letter=(name.match(/[\p{L}\d]/u)?.[0]||'#').toLocaleUpperCase('ru').replace(/\u0401/g,'Е');
+      if(!groups.has(letter))groups.set(letter,[]);groups.get(letter).push(name);
+    }
+    for(const [letter,items] of [...groups].sort(([a],[b])=>rank(a)-rank(b)||a.localeCompare(b,'ru'))){
+      artistDropdown.append(make('div','artist-letter',letter));
+      for(const name of items.sort((a,b)=>a.localeCompare(b,'ru',{sensitivity:'base'}))){
+        const button=make('button','artist-option',name);button.type='button';button.setAttribute('role','option');button.setAttribute('aria-selected',String(artistExact&&artistKey(activeArtist)===artistKey(name)));
+        button.addEventListener('click',()=>{clearTimeout(artistTimer);artistInput.value=name;activeArtist=name;artistExact=true;showArtist(false);artistInput.focus();showArtist(false);load();});
+        artistDropdown.append(button);
+      }
+    }
+    if(!groups.size)artistDropdown.append(make('p','artist-empty','Исполнители не найдены'));
+  }
+  function fetchArtists(){
+    if(artistNames!==null||artistRequest)return;
+    artistError=false;
+    artistRequest=get('/artists').then(d=>{if(!Array.isArray(d.items))throw Error('artists');artistNames=d.items.map(i=>i.name).filter(n=>typeof n==='string');}).catch(()=>{artistError=true;}).finally(()=>{artistRequest=null;renderArtists();});
+  }
+  artistInput.addEventListener('focus',()=>{showArtist(true);renderArtists();fetchArtists();});
+  artistInput.addEventListener('input',()=>{
+    clearTimeout(artistTimer);showArtist(true);renderArtists();fetchArtists();
+    artistTimer=setTimeout(()=>{activeArtist=artistInput.value.trim();artistExact=false;load();},300);
+  });
+  artistInput.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){showArtist(false);return;}
+    if(e.key==='ArrowDown'){e.preventDefault();showArtist(true);artistDropdown.querySelector('button')?.focus();}
+    if(e.key==='Enter'){e.preventDefault();clearTimeout(artistTimer);activeArtist=artistInput.value.trim();artistExact=false;showArtist(false);load();}
+  });
+  artistDropdown.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){e.preventDefault();artistInput.focus();showArtist(false);return;}
+    if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const buttons=[...artistDropdown.querySelectorAll('button')];let i=buttons.indexOf(document.activeElement);i=e.key==='Home'?0:e.key==='End'?buttons.length-1:Math.max(0,Math.min(buttons.length-1,i+(e.key==='ArrowDown'?1:-1)));buttons[i]?.focus();}
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('.artist-combobox'))showArtist(false);});
+  $('.artist-combobox').addEventListener('focusout',e=>{if(!e.currentTarget.contains(e.relatedTarget))showArtist(false);});
   function resetFilters(keepQuery=false){
+    clearTimeout(artistTimer);artistInput.value='';activeArtist='';artistExact=false;showArtist(false);
     if(!keepQuery){$('#header-search').value='';activeQuery='';}
     $('input[name=category][value=all]').checked=true;
     $('input[name=edition][value=all]').checked=true;

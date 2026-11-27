@@ -18,7 +18,7 @@
   
   <link rel="stylesheet" href="/assets/preview.css?v=331">
   <script src="/assets/preview.js?v=327" defer></script>
-  <script src="/assets/catalog-ui.js?v=332" defer></script>
+  <script src="/assets/catalog-ui.js?v=333" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -161,6 +161,14 @@
             <label><input type="radio" name="edition" value="all" checked> Все издания</label>
             <label><input type="radio" name="edition" value="import"> Импортное издание</label>
             <label><input type="radio" name="edition" value="russian"> Российское издание</label>
+          </div>
+          <div class="filter-group">
+            <h3>Артист</h3>
+            <label class="filter-search-label" for="artist-filter">Поиск и список по алфавиту</label>
+            <div class="artist-combobox">
+              <input class="filter-search" id="artist-filter" type="search" placeholder="Все артисты" autocomplete="off" maxlength="240" role="combobox" aria-expanded="false" aria-controls="artist-dropdown">
+              <div class="artist-dropdown" id="artist-dropdown" role="listbox" hidden></div>
+            </div>
           </div>
           <div class="filter-group">
             <h3>Наличие</h3>

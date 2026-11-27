@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from app.db import engine
+from app.catalog_names import artist_key, display_name, filter_artist
 
 router = APIRouter(prefix="/api/v1/catalog", tags=["catalog"])
 CATEGORY = """CASE
@@ -82,6 +83,7 @@ def public_item(row, detail=False):
         price = row["amount_minor"]
     out = {
         "ean": row["ean"], "name": c["name"], "artist": public_text(c.get("artist")),
+        "display": display_name(c["name"], public_text(c.get("artist"))),
         "media": public_text(c.get("media")), "category": row["category"],
         "edition": public_text(c.get("edition")), "image": primary,
         "price_minor": price, "currency": "RUB",
@@ -140,16 +142,42 @@ def no_cache(response):
     response.headers["Cache-Control"] = "no-store"
     response.headers["X-Content-Type-Options"] = "nosniff"
 
+def artist_rows(conn):
+    # Only lightweight name fields; no descriptions or image arrays.
+    rows = conn.execute(text("SELECT p.ean, p.card->>'name' AS name, p.card->>'artist' AS artist" + JOIN + " ORDER BY p.ean")).mappings()
+    for row in rows:
+        name = filter_artist(display_name(row["name"], row["artist"]))
+        if name:
+            yield row["ean"], name
+
+@router.get("/artists")
+def artists(response: Response):
+    no_cache(response)
+    with read_catalog() as conn:
+        result = {}
+        for ean, name in artist_rows(conn):
+            key = artist_key(name)
+            item = result.setdefault(key, {"name": name, "count": 0})
+            item["count"] += 1
+        return {"items": sorted(result.values(), key=lambda item: artist_key(item["name"])), "total": len(result)}
+
 @router.get("")
 def catalog(response: Response, q: str = Query("", max_length=160),
             category: Category = "all", in_stock: bool = False,
             edition: Edition = "all",
+            artist: str = Query("", max_length=240), artist_exact: bool = False,
             max_price_minor: int | None = Query(None, ge=0, le=10000000000),
             sort: Sort = "new", limit: int = Query(48, ge=1, le=100),
             offset: int = Query(0, ge=0, le=50000)):
     no_cache(response)
     where, params = filters(q, category, in_stock, max_price_minor, edition)
     with read_catalog() as conn:
+        selected = artist_key(artist)
+        if selected:
+            matches = [ean for ean, name in artist_rows(conn)
+                       if (artist_key(name) == selected if artist_exact else selected in artist_key(name))]
+            where += (" AND " if where else " WHERE ") + "p.ean = ANY(CAST(:artist_eans AS text[]))"
+            params["artist_eans"] = matches
         total = conn.execute(text("SELECT count(*)" + JOIN + where), params).scalar_one()
         rows = conn.execute(text("SELECT " + COLS + JOIN + where + " ORDER BY " +
                             SORT[sort] + " LIMIT :limit OFFSET :offset"),
