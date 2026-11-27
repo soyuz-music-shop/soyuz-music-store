@@ -30,12 +30,27 @@
   }
   const availability = x => x.in_stock_at_snapshot?'В наличии по снимку':'Нет в наличии по снимку';
   function card(x){
-    const el=make('article','product-card catalog-card');
-    const btn=make('button','catalog-open');btn.type='button';
-    btn.append(image(x.image,'catalog-cover',x.name),make('strong','catalog-name',x.name),
-      make('span','catalog-media',x.media||'Тип не указан'),make('span','catalog-price',price(x.price_minor)),
-      make('span','catalog-availability',availability(x)));
-    btn.addEventListener('click',()=>openDetail(x.ean));el.append(btn);return el;
+    const name=displayName(x);
+    const el=make('article','product-card');el.dataset.category=x.category;el.dataset.product=x.ean;
+    el.tabIndex=0;el.setAttribute('aria-label','Подробнее: '+[name.artist,name.title].filter(Boolean).join(' — '));
+    const colors={vinyl:'linear-gradient(135deg,#111,#6b5018)',cd:'linear-gradient(135deg,#1d2430,#5f6470)',tape:'linear-gradient(135deg,#111,#b18c30)',book:'linear-gradient(135deg,#171613,#876b32)',movie:'linear-gradient(135deg,#251b1b,#7a2020)'};
+    const cover=make('div','cover');cover.style.setProperty('--cover',colors[x.category]||colors.vinyl);cover.dataset.mark=name.artist;
+    if(typeof x.image==='string'&&x.image.startsWith('https://ir.ozone.ru/')){
+      cover.classList.add('has-image');const img=make('img','cover-image');img.src=x.image;img.alt='';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';
+      img.addEventListener('error',()=>{img.remove();cover.classList.remove('has-image');},{once:true});cover.append(img);
+    }
+    const info=make('div','product-info'),row=make('div','product-title-row'),copy=make('div','product-title-copy');
+    copy.append(make('h3','',name.artist));if(name.title)copy.append(make('h4','',name.title));
+    const fav=make('button','favorite-button','♡');fav.type='button';fav.disabled=true;fav.setAttribute('aria-label','Избранное пока не подключено');row.append(copy,fav);info.append(row);
+    const details=make('p','album-details'+(name.details?'':' empty'),name.details||'');if(!name.details)details.setAttribute('aria-hidden','true');info.append(details);
+    const carrier={vinyl:'LP',cd:'CD',tape:'MC',book:'Книга',movie:'Фильм'}[x.category]||x.media;
+    if(carrier){const chips=make('div','chips');chips.append(make('span','',carrier));info.append(chips);}
+    const pr=make('div','price-row');pr.append(make('span','price',detailMoney(x.price_minor)),make('span','stock'+(x.in_stock_at_snapshot?'':' out'),availability(x)));info.append(pr);
+    const buy=make('button','buy-button',x.in_stock_at_snapshot?'В корзину':'Сообщить о поступлении');buy.type='button';buy.disabled=true;buy.title='Функция пока не подключена';info.append(buy);
+    el.append(cover,info);
+    el.addEventListener('click',e=>{if(!e.target.closest('button'))openDetail(x.ean);});
+    el.addEventListener('keydown',e=>{if(e.target===el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openDetail(x.ean);}});
+    return el;
   }
   async function load(reset=true){
     if(!reset&&(busy||next===null))return;
