@@ -1,5 +1,7 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from sqlalchemy import text
 from app.db import engine
 
@@ -21,13 +23,16 @@ def readiness():
 
 @app.get('/health/live')
 def live():
-    return {'status': 'ok', 'release': 'M314', 'sales_enabled': False}
+    return {'status': 'ok', 'release': 'M316', 'sales_enabled': False}
 
 @app.get('/health/ready')
 def ready():
     ok = readiness()
-    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M314', 'sales_enabled': False}, status_code=200 if ok else 503)
+    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M316', 'sales_enabled': False}, status_code=200 if ok else 503)
 
-@app.get('/', response_class=HTMLResponse)
+STOREFRONT = Path(__file__).resolve().parent / 'storefront'
+app.mount('/assets', StaticFiles(directory=STOREFRONT / 'assets'), name='storefront-assets')
+
+@app.get('/')
 def index():
-    return '<!doctype html><html lang="ru"><meta charset="utf-8"><title>SOYUZ Store</title><h1>SOYUZ MUSIC</h1><p>Инфраструктура M314. Продажи отключены.</p></html>'
+    return FileResponse(STOREFRONT / 'index.html', media_type='text/html', headers={'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff'})

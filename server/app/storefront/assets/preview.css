@@ -1,0 +1,5 @@
+.store-preview {margin: 12px auto; max-width: 1200px; padding: 10px 18px; border: 1px solid currentColor; border-radius: 12px; font-size: .9rem; text-align:center;}
+.featured-item {cursor:default}
+[inert] {opacity:.65}
+button:disabled {cursor:not-allowed}
+@media (max-width:900px){.main-nav.is-open{display:flex}}
