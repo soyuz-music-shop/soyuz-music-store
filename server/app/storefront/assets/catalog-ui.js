@@ -56,27 +56,99 @@
       const retry=make('button','load-more','Повторить');retry.type='button';retry.addEventListener('click',()=>{retry.remove();load(reset);},{once:true});grid.append(retry);
     }finally{if(current===sequence){busy=false;more.disabled=false;}}
   }
+  const safe = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+function descriptionHtml(value) {
+  const raw = String(value || '').trim();
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const heading = raw.match(/трек\s*-?\s*лист\s*:?\s*/i);
+  if (!heading) return `<p class="detail-description">${safe(text)}</p>`;
+
+  const intro = raw.slice(0, heading.index).replace(/\s+/g, ' ').trim();
+  const trackText = raw.slice(heading.index + heading[0].length).trim();
+  let tracks = trackText.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  if (tracks.length < 2) {
+    const markers = [...trackText.matchAll(/(?:^|\s)((?:[A-ZА-Я]\s*)?\d{1,3})[.)]\s*/gi)];
+    tracks = markers.map((marker, index) => {
+      const start = marker.index + marker[0].length;
+      const end = index + 1 < markers.length ? markers[index + 1].index : trackText.length;
+      const title = trackText.slice(start, end).trim();
+      return title ? `${marker[1]}. ${title}` : '';
+    }).filter(Boolean);
+  }
+  if (!tracks.length) return `<p class="detail-description">${safe(text)}</p>`;
+
+  return `${intro ? `<p class="detail-description">${safe(intro)}</p>` : ''}
+    <div class="tracklist-block">
+      <strong>Треклист</strong>
+      <div class="tracklist-lines">${tracks.map(track => `<div>${safe(track)}</div>`).join('')}</div>
+    </div>`;
+}
+
+  function displayName(x){
+    const raw=String(x.name||'').trim(), hint=String(x.artist||'').trim();
+    let artist='',title=raw;
+    if(hint&&raw.toLocaleLowerCase('ru').startsWith(hint.toLocaleLowerCase('ru'))){
+      const rest=raw.slice(hint.length);
+      if(!rest||/^[\s.:—–-]/.test(rest)){artist=hint;title=rest.replace(/^[\s.:—–-]+/,'');}
+    }
+    if(!artist){
+      for(const re of [/\s+[—–-]\s+/,/\s*:\s+/,/\.\s+/]){
+        const m=re.exec(raw);if(m&&m.index>0){artist=raw.slice(0,m.index).trim();title=raw.slice(m.index+m[0].length).trim();break;}
+      }
+    }
+    if(!artist){artist=raw;title='';}
+    const split=v=>{const i=v.indexOf('(');return i>0?[v.slice(0,i).trim(),v.slice(i).trim()]:[v,''];};
+    const a=split(artist),t=split(title);
+    return {artist:a[0],title:t[0],details:[a[1],t[1]].filter(Boolean).join(' ')};
+  }
+  const categories={vinyl:'Винил',cd:'CD',tape:'Кассета',book:'Книга',movie:'Фильм',other:'Товар'};
+  const detailMoney=v=>Number.isSafeInteger(v)&&v>=0?new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',minimumFractionDigits:v%100?2:0,maximumFractionDigits:2}).format(v/100):'Цена уточняется';
   async function openDetail(ean){
     const seq=++detailSeq;detail.replaceChildren(make('p','loading','Загружаем карточку…'));
     if(!dialog.open)dialog.showModal();
     try{
       const x=await get('/item',{ean});if(seq!==detailSeq||!dialog.open)return;
       if(x.ean!==ean||x.can_purchase!==false)throw Error('Unexpected product');
-      const wrap=make('div','catalog-detail');
-      const gallery=make('div','catalog-gallery');
-      const primary=image(x.image,'catalog-detail-image',x.name);gallery.append(primary);
-      const thumbs=make('div','catalog-thumbs');
-      for(const u of [...new Set([x.image,...(x.images||[])])].filter(Boolean)){
-        const b=make('button','catalog-thumb');b.type='button';b.setAttribute('aria-label','Показать фотографию');b.append(image(u,'catalog-thumb-image'));
-        b.addEventListener('click',()=>primary.replaceChildren(...image(u,'catalog-detail-image',x.name).childNodes));thumbs.append(b);
-      }gallery.append(thumbs);
-      const info=make('div','catalog-info');info.append(make('h2','',x.name),make('p','catalog-price',price(x.price_minor)),make('p','',availability(x)),make('p','catalog-sale-off','Оформление заказов пока отключено.'));
+      const name=displayName(x);
+      const urls=[...new Set([x.image,...(x.images||[])])].filter(u=>typeof u==='string'&&u.startsWith('https://ir.ozone.ru/'));
+      const gallery=make('div','detail-gallery');
+      if(urls.length){
+        const big=make('img','detail-main-image');big.id='detail-main-image';big.src=urls[0];big.alt=name.title||name.artist;big.referrerPolicy='no-referrer';
+        gallery.append(big);
+        if(urls.length>1){
+          const thumbs=make('div','detail-thumbnails');
+          urls.slice(0,10).forEach((url,i)=>{const b=make('button');b.type='button';b.setAttribute('aria-label','Показать фото '+(i+1));b.setAttribute('aria-pressed',String(i===0));
+            const img=make('img');img.src=url;img.alt='';img.loading='lazy';img.referrerPolicy='no-referrer';b.append(img);
+            b.addEventListener('click',()=>{big.src=url;for(const t of thumbs.querySelectorAll('button'))t.setAttribute('aria-pressed',String(t===b));});thumbs.append(b);});
+          gallery.append(thumbs);
+        }
+      }else gallery.append(make('div','detail-image-placeholder','Нет изображения'));
+      const info=make('div','detail-content');
+      info.append(make('p','eyebrow',categories[x.category]||'Товар'),make('h2','',name.artist));
+      if(name.title)info.append(make('p','detail-title',name.title));
+      if(name.details)info.append(make('p','album-details detail-name-details',name.details));
+      const pr=make('div','detail-price-row');
+      pr.append(make('strong','',detailMoney(x.price_minor)),make('span','stock'+(x.in_stock_at_snapshot?'':' out'),x.in_stock_at_snapshot?'В наличии':'Нет в наличии'));
+      info.append(pr);
+      const actions=make('div','detail-actions'),buy=make('button','buy-button',x.in_stock_at_snapshot?'В корзину':'Сообщить о поступлении'),fav=make('button','detail-favorite','♡ В избранное');
+      for(const b of [buy,fav]){b.type='button';b.disabled=true;b.title='Функция пока не подключена';actions.append(b);}
+      info.append(actions);
+      const description=descriptionHtml(x.description);
       const specs=make('dl','detail-specs');
       for(const [key,label] of Object.entries({ean:'EAN',artist:'Исполнитель',media:'Носитель',edition:'Издание',genre:'Жанр',publisher:'Издатель',country:'Страна',year:'Год',media_qty:'Количество носителей',packaging:'Упаковка',vinyl_color:'Цвет',catalog_number:'Каталожный номер'})){
-        if(x[key]!==null&&x[key]!==undefined&&x[key]!==''){specs.append(make('dt','',label),make('dd','',x[key]));}
+        if(x[key]!==null&&x[key]!==undefined&&x[key]!==''){const row=make('div');row.append(make('dt','',label),make('dd','',x[key]));specs.append(row);}
       }
-      info.append(specs);if(x.description)info.append(make('h3','','Описание'),make('p','catalog-description',x.description));
-      wrap.append(gallery,info);detail.replaceChildren(wrap);
+      const tabs=make('div','detail-tabs');tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Информация о товаре');
+      const dp=make('section','detail-tab-panel'),sp=make('section','detail-tab-panel');
+      dp.id='detail-panel-description';sp.id='detail-panel-specs';
+      dp.innerHTML=description||'<p class="detail-empty">Описание пока не добавлено.</p>';
+      sp.append(specs.children.length?specs:make('p','detail-empty','Характеристики пока не добавлены.'));
+      const buttons=[make('button','detail-tab','Описание'),make('button','detail-tab','Характеристики')],panels=[dp,sp];
+      function select(i){buttons.forEach((b,j)=>{b.classList.toggle('active',i===j);b.setAttribute('aria-selected',String(i===j));b.tabIndex=i===j?0:-1;panels[j].hidden=i!==j;});}
+      buttons.forEach((b,i)=>{b.type='button';b.id='detail-tab-'+i;b.setAttribute('role','tab');b.setAttribute('aria-controls',panels[i].id);panels[i].setAttribute('role','tabpanel');panels[i].setAttribute('aria-labelledby',b.id);b.addEventListener('click',()=>select(i));b.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?1:1-i;select(n);buttons[n].focus();}});tabs.append(b);});
+      select(description?0:1);info.append(tabs,dp,sp);
+      detail.replaceChildren(gallery,info);
     }catch(e){if(seq===detailSeq&&dialog.open)detail.replaceChildren(make('p','loading','Карточка пока недоступна.'));}
   }
   $('#detail-close').addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>{detailSeq++;});
