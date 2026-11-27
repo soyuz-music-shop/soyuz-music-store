@@ -25,16 +25,16 @@ def readiness():
 
 @app.get('/health/live')
 def live():
-    return {'status': 'ok', 'release': 'M321', 'sales_enabled': False}
+    return {'status': 'ok', 'release': 'M322', 'sales_enabled': False}
 
 @app.get('/health/ready')
 def ready():
     ok = readiness()
-    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M321', 'sales_enabled': False}, status_code=200 if ok else 503)
+    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M322', 'sales_enabled': False}, status_code=200 if ok else 503)
 
 STOREFRONT = Path(__file__).resolve().parent / 'storefront'
 app.mount('/assets', StaticFiles(directory=STOREFRONT / 'assets'), name='storefront-assets')
 
 @app.get('/')
 def index():
-    return FileResponse(STOREFRONT / 'index.html', media_type='text/html', headers={'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff'})
+    return FileResponse(STOREFRONT / 'index.html', media_type='text/html', headers={'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://ir.ozone.ru; connect-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff'})

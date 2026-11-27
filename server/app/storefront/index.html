@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f6f3ed" id="theme-color">
-  <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги с оплатой и доставкой через Ozon.">
+  <meta name="description" content="Союз Мьюзик — винил, CD, кассеты и книги Предварительный просмотр каталога.">
   <title>Союз Мьюзик — музыка, которую хочется держать в руках</title>
   <link rel="icon" type="image/png" sizes="600x600" href="/assets/logo.png">
   <link rel="apple-touch-icon" href="/assets/logo.png">
@@ -16,8 +16,9 @@
   
   
   
-  <link rel="stylesheet" href="/assets/preview.css">
-  <script src="/assets/preview.js" defer></script>
+  <link rel="stylesheet" href="/assets/preview.css?v=322">
+  <script src="/assets/preview.js?v=322" defer></script>
+  <script src="/assets/catalog-ui.js?v=322" defer></script>
 </head>
 <body>
   <header class="site-header" id="top">
@@ -27,13 +28,13 @@
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Меню</button>
     <nav class="main-nav" id="main-nav" aria-label="Основная навигация">
       <a class="active" href="#catalog">Каталог</a>
-      <a href="#new">Новинки</a>
+      <a href="#new-carousel">Новинки</a>
       <a href="#about">О нас</a>
     </nav>
-    <form class="header-search" id="search-form" role="search" inert>
+    <form class="header-search" id="search-form" role="search">
       <span class="sr-only">Поиск по каталогу</span>
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
-      <input id="header-search" type="search" placeholder="Каталог пока не подключен" autocomplete="off">
+      <input id="header-search" type="search" placeholder="Поиск по названию, исполнителю или EAN" autocomplete="off" maxlength="160" aria-label="Поиск по каталогу">
       <button class="search-button" type="submit">Поиск</button>
     </form>
     <button class="icon-button account-button" id="account-button" type="button" aria-label="Войти или зарегистрироваться" disabled title="Функция пока не подключена">
@@ -60,7 +61,7 @@
   </header>
 
   <main>
-    <div class="store-preview" role="status">Предварительный просмотр нового магазина. Каталог, личный кабинет и оформление заказов пока не подключены.</div>
+    <div class="store-preview" role="status">Предварительный просмотр магазина. Цены и наличие по последнему импорту; заказы и оплата отключены.</div>
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-copy">
         <p class="eyebrow">Официальный интернет-магазин музыкального лейбла Soyuz Music</p>
@@ -69,7 +70,7 @@
         <a class="primary-button" href="#catalog">Перейти в каталог <span>↗</span></a>
         <div class="hero-points" aria-label="Преимущества магазина">
           <span>Оригинальная продукция</span>
-          <span>Каталог готовится к подключению</span>
+          <span><span id="hero-count">Каталог</span></span>
           <span>Редкие и коллекционные издания</span>
         </div>
       </div>
@@ -88,16 +89,16 @@
         <div>
           <p class="eyebrow">Новинки SOYUZ MUSIC</p>
           <h2 id="featured-carousel-title">Свежие поступления</h2>
-          <p class="featured-subtitle" id="featured-carousel-subtitle">Предпросмотр оформления новинок</p>
+          <p class="featured-subtitle" id="featured-carousel-subtitle">Выбранные новинки</p>
         </div>
         <div class="featured-controls">
           <button class="featured-arrow" id="featured-prev" type="button" aria-label="Предыдущие новинки" disabled>←</button>
           <button class="featured-arrow" id="featured-next" type="button" aria-label="Следующие новинки" disabled>→</button>
         </div>
       </div>
-      <div class="featured-items" id="featured-items" style="--featured-visible-columns:3" aria-live="off"><div class="featured-item"><span class="featured-image"><img src="/assets/new-release-images/2000095762164-1794219377892-0.webp" alt="" loading="lazy" decoding="async"></span><span class="featured-item-text"><strong class="featured-item-artist">Глеб Самойлоff &amp; The Matrixx</strong><span class="featured-item-album">Треш (2LP Red)</span></span></div>
-<div class="featured-item"><span class="featured-image"><img src="/assets/new-release-images/4610297810532-1794219377892-1.webp" alt="" loading="lazy" decoding="async"></span><span class="featured-item-text"><strong class="featured-item-artist">Глеб Самойлоff &amp; The Matrixx</strong><span class="featured-item-album">Треш (2LP Black)</span></span></div>
-<div class="featured-item"><span class="featured-image"><img src="/assets/new-release-images/4610297810938-1794219377892-2.webp" alt="" loading="lazy" decoding="async"></span><span class="featured-item-text"><strong class="featured-item-artist">Глеб Самойлоff &amp; The Matrixx</strong><span class="featured-item-album">Треш (MC black)</span></span></div></div>
+      <div class="featured-items" id="featured-items" style="--featured-visible-columns:3" aria-live="off"><div class="featured-item" data-featured-ean="2000095762164"><span class="featured-image"><img src="/assets/new-release-images/2000095762164-1794219377892-0.webp" alt="" loading="lazy" decoding="async"></span><span class="featured-item-text"><strong class="featured-item-artist">Глеб Самойлоff &amp; The Matrixx</strong><span class="featured-item-album">Треш (2LP Red)</span></span></div>
+<div class="featured-item" data-featured-ean="4610297810532"><span class="featured-image"><img src="/assets/new-release-images/4610297810532-1794219377892-1.webp" alt="" loading="lazy" decoding="async"></span><span class="featured-item-text"><strong class="featured-item-artist">Глеб Самойлоff &amp; The Matrixx</strong><span class="featured-item-album">Треш (2LP Black)</span></span></div>
+<div class="featured-item" data-featured-ean="4610297810938"><span class="featured-image"><img src="/assets/new-release-images/4610297810938-1794219377892-2.webp" alt="" loading="lazy" decoding="async"></span><span class="featured-item-text"><strong class="featured-item-artist">Глеб Самойлоff &amp; The Matrixx</strong><span class="featured-item-album">Треш (MC black)</span></span></div></div>
       <div class="featured-pagination" id="featured-pagination" aria-label="Переключение новинок"></div>
     </section>
 
@@ -105,7 +106,7 @@
       <button class="category-card vinyl-card" data-category-jump="vinyl" aria-label="Открыть винил"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
       <button class="category-card cd-card" data-category-jump="cd" aria-label="Открыть CD"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
       <button class="category-card tape-card" data-category-jump="tape" aria-label="Открыть кассеты"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
-      <button class="category-card book-card" data-category-jump="book" aria-label="Открыть книги"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
+      <button class="category-card book-card" data-category-jump="book" disabled title="Категория пока не классифицирована" aria-label="Открыть книги"><picture><source srcset="/assets/category-reference.webp" type="image/webp"><img src="/assets/category-reference.webp" alt="" width="1774" height="887" loading="lazy" decoding="async"></picture></button>
     </section>
 
     <section class="about" id="about" aria-labelledby="about-title">
@@ -125,10 +126,10 @@
         <div>
           <p class="eyebrow" id="new">В центре внимания</p>
           <h2 id="catalog-title">Каталог</h2>
-          <p aria-live="polite">Каталог еще не подключен</p>
+          <p aria-live="polite"><span id="result-count">—</span> товаров найдено</p>
           <button class="catalog-back-button" id="favorites-back" type="button" hidden>← Вернуться в каталог</button>
         </div>
-        <div class="catalog-tools" inert>
+        <div class="catalog-tools">
           <label>Сортировка
             <select id="sort-select">
               <option value="new">Сначала новинки</option>
@@ -141,8 +142,9 @@
         </div>
       </div>
 
+      <p class="catalog-snapshot" id="catalog-snapshot" role="status">Данные последнего импорта. Покупки отключены.</p>
       <div class="catalog-layout">
-        <aside class="filters" id="filters" aria-label="Фильтры каталога" inert>
+        <aside class="filters" id="filters" aria-label="Фильтры каталога">
           <button class="filter-reset-button" type="button" data-reset-filters>Очистить фильтры</button>
           <div class="filter-group">
             <h3>Категория</h3>
@@ -150,38 +152,25 @@
             <label><input type="radio" name="category" value="vinyl"> Винил <span data-count="vinyl">0</span></label>
             <label><input type="radio" name="category" value="cd"> CD <span data-count="cd">0</span></label>
             <label><input type="radio" name="category" value="tape"> Кассеты <span data-count="tape">0</span></label>
-            <label><input type="radio" name="category" value="book"> Книги <span data-count="book">0</span></label>
+            <label><input type="radio" name="category" value="book" disabled> Книги (уточняется)</label>
+            <label><input type="radio" name="category" value="other"> Без категории <span data-count="other">0</span></label>
             <label><input type="radio" name="category" value="movie"> Фильмы <span data-count="movie">0</span></label>
           </div>
           <div class="filter-group">
-            <h3>Издание</h3>
-            <label><input type="radio" name="edition" value="all" checked> Все издания</label>
-            <label><input type="radio" name="edition" value="import"> Импортное издание</label>
-            <label><input type="radio" name="edition" value="russian"> Российское издание</label>
-          </div>
-          <div class="filter-group">
-            <h3>Артист</h3>
-            <label class="filter-search-label" for="artist-filter">Поиск и список по алфавиту</label>
-            <div class="artist-combobox">
-              <input class="filter-search" id="artist-filter" type="search" placeholder="Все артисты" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="artist-dropdown">
-              <div class="artist-dropdown" id="artist-dropdown" role="listbox" hidden></div>
-            </div>
-          </div>
-          <div class="filter-group">
             <h3>Наличие</h3>
-            <label><input id="stock-only" type="checkbox"> Только в наличии</label>
+            <label><input id="stock-only" type="checkbox"> В наличии по снимку</label>
           </div>
           <div class="filter-group">
             <h3>Цена</h3>
-            <label class="range-label"><span>до <output id="price-output">100 000 ₽</output></span>
+            <label class="range-label"><span><output id="price-output">Любая цена</output></span>
               <input id="price-range" type="range" min="0" max="100000" value="100000" step="500">
             </label>
           </div>
         </aside>
 
         <div>
-          <div class="product-grid" id="product-grid" aria-live="polite"><p class="loading">Здесь появятся товары после подключения каталога.</p></div>
-          <button class="load-more" id="load-more" type="button" hidden>Показать ещё</button>
+          <div class="product-grid" id="product-grid" aria-live="polite"><p class="loading">Загружаем каталог…</p></div>
+          <button class="load-more" id="load-more" type="button" hidden>Показать еще</button>
           <div class="empty-state" id="empty-state" hidden>
             <h3>Ничего не нашли</h3>
             <p>Попробуйте изменить запрос или сбросить фильтры.</p>
@@ -199,5 +188,6 @@
   </footer>
 
 
+<dialog class="product-dialog" id="product-dialog" aria-label="Карточка товара"><button class="close-button product-close" id="detail-close" type="button" aria-label="Закрыть карточку">×</button><div id="product-detail"></div></dialog>
 </body>
 </html>
