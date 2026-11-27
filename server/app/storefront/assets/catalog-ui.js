@@ -20,10 +20,10 @@
     if(!res.ok)throw Error('HTTP '+res.status); return res.json();
   }
   let sequence=0, controller, next=null, busy=false, detailSeq=0;
-  let ids=new Set();
+  let ids=new Set(), activeQuery='';
   const status = text => $('#catalog-snapshot').textContent=text;
   function params(offset){
-    const p={q:$('#header-search').value.trim(),category:$('input[name=category]:checked').value,
+    const p={q:activeQuery,category:$('input[name=category]:checked').value,
       edition:$('input[name=edition]:checked').value,in_stock:$('#stock-only').checked,sort:$('#sort-select').value,limit:48,offset};
     if(Number(range.value)<Number(range.max))p.max_price_minor=Number(range.value)*100;
     return p;
@@ -233,14 +233,14 @@ function displayName(x){
   }
   $('#detail-close').addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>{detailSeq++;});
   function resetFilters(keepQuery=false){
-    if(!keepQuery)$('#header-search').value='';
+    if(!keepQuery){$('#header-search').value='';activeQuery='';}
     $('input[name=category][value=all]').checked=true;
     $('input[name=edition][value=all]').checked=true;
     $('#stock-only').checked=false;range.value=range.max;
     $('#price-output').textContent='Любая цена';
   }
-  $('#search-form').addEventListener('submit',e=>{e.preventDefault();resetFilters(true);load();$('#catalog').scrollIntoView();});
-  $('#header-search').addEventListener('input',e=>{if(!e.target.value)load();});
+  $('#search-form').addEventListener('submit',e=>{e.preventDefault();activeQuery=$('#header-search').value.trim();resetFilters(true);load();$('#catalog').scrollIntoView();});
+  $('#header-search').addEventListener('input',e=>{if(!e.target.value&&activeQuery){activeQuery='';load();}});
   for(const el of document.querySelectorAll('input[name=category]:not(:disabled),input[name=edition],#stock-only,#sort-select'))el.addEventListener('change',()=>load());
   range.addEventListener('input',()=>$('#price-output').textContent=Number(range.value)===Number(range.max)?'Любая цена':'до '+currency.format(Number(range.value)));
   range.addEventListener('change',()=>load());more.addEventListener('click',()=>load(false));

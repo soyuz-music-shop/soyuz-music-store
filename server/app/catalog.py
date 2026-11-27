@@ -121,8 +121,8 @@ def filters(q, category, in_stock, max_price_minor, edition="all"):
             params["exact_query"] = q.strip()
         else:
             # AND across query tokens, independent of order; exact EAN is always accepted.
-            parts.append("(p.ean = :exact_query OR NOT EXISTS (SELECT 1 FROM unnest(CAST(:tokens AS text[])) AS term(token) WHERE strpos(" + SEARCH_TEXT + ", term.token) = 0))")
-            params.update(exact_query=q.strip(), tokens=tokens)
+            parts.append("(CASE WHEN EXISTS (SELECT 1 FROM store.catalog_products exact WHERE exact.ean = :exact_query) THEN p.ean = :exact_query ELSE " + SEARCH_TEXT + " LIKE ALL(CAST(:patterns AS text[])) END)")
+            params.update(exact_query=q.strip(), patterns=["%" + token + "%" for token in tokens])
     if edition != "all":
         parts.append(":edition_name = ANY(regexp_split_to_array(lower(btrim(coalesce(p.card->>'edition',''))), '[[:space:]]*[;,|·][[:space:]]*'))")
         params["edition_name"] = {"import":"импортное", "russian":"российское"}[edition]
