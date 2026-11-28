@@ -12,7 +12,7 @@
   // Remove sensitive fragments before any asynchronous request or rendering of forms.
   const action=/^#(verify|reset|change-email)=([A-Za-z0-9_-]{43})$/.exec(hash);
   if(hash)history.replaceState(null,'',location.pathname+location.search);
-  if(action)token=null;
+  if(action)token=action[2];
   function field(id,on,required=on){const box=$('#'+id+'-field'),input=box.querySelector('input');box.hidden=!on;input.disabled=!on;input.required=required;if(!on&&id!=='email')input.value='';}
   function setMode(next,message=''){
     mode=next;const login=mode==='login',register=mode==='register',resetRequest=mode==='reset-request',verify=mode==='verify',reset=mode==='reset',changeEmail=mode==='change-email';
@@ -23,7 +23,7 @@
     for(const b of document.querySelectorAll('[data-mode]')){b.classList.toggle('active',b.dataset.mode===mode);b.setAttribute('aria-pressed',String(b.dataset.mode===mode));}
     field('email',login||register||resetRequest);field('name',verify);field('password',login||verify||reset||changeEmail);field('confirm',verify||reset);field('remember',login,false);
     $('#password').autocomplete=(login||changeEmail)?'current-password':'new-password';$('#password').value='';$('#confirm').value='';
-    $('#submit').textContent=({login:'Войти',register:'Отправить письмо','reset-request':'Отправить письмо',verify:'Создать аккаунт',reset:'Сохранить пароль','change-email':'Подтвердить новый адрес'})[mode];$('#forgot').hidden=true;$('#back').hidden=login||register;msg.textContent=message;
+    $('#submit').textContent=({login:'Войти',register:'Отправить письмо','reset-request':'Отправить письмо',verify:'Создать аккаунт',reset:'Сохранить пароль','change-email':'Подтвердить новый адрес'})[mode];$('#forgot').hidden=!login;$('#back').hidden=login||register;msg.textContent=message;
   }
   function setBusy(v){busy=v;form.querySelectorAll('button').forEach(b=>b.disabled=v);document.querySelectorAll('[data-mode]').forEach(b=>b.disabled=v);$('#session').querySelectorAll('button').forEach(b=>b.disabled=v);$('#retry').disabled=v;}
   const errors={invalid_request:'Проверьте введенные данные.',invalid_credentials:'Неверная почта или пароль. Если почта не подтверждена, завершите регистрацию.',invalid_or_expired_link:'Ссылка недействительна или истекла. Запросите новое письмо.',too_many_requests:'Слишком много попыток. Попробуйте позже.',forbidden:'Не удалось подтвердить безопасность запроса. Обновите страницу.',unavailable:'Сервис временно недоступен. Попробуйте позже.'};
@@ -41,5 +41,5 @@
   $('#password-form').addEventListener('submit',async e=>{e.preventDefault();if(busy)return;if($('#new-password').value!==$('#new-confirm').value){msg.textContent='Пароли не совпадают.';return;}setBusy(true);try{await request('change-password',{old_password:$('#old-password').value,new_password:$('#new-password').value},csrfToken());setMode('login','Пароль изменен. Войдите с новым паролем.');}catch(e){msg.textContent=e.code==='invalid_credentials'?'Неверный текущий пароль.':e.message;}finally{$('#password-form').reset();setBusy(false);}});
   $('#email-change-form').addEventListener('submit',async e=>{e.preventDefault();if(busy)return;setBusy(true);try{await request('change-email-request',{email:$('#new-email').value.trim(),password:$('#email-password').value},csrfToken());msg.textContent='Если запрос может быть выполнен, письмо будет отправлено на новый адрес.';}catch(e){msg.textContent=e.code==='invalid_credentials'?'Неверный текущий пароль.':e.message;}finally{$('#email-change-form').reset();setBusy(false);}});
   $('#delete-form').addEventListener('submit',async e=>{e.preventDefault();if(busy||!$('#delete-confirm').checked)return;if(!window.confirm('Удалить аккаунт без возможности восстановления?'))return;setBusy(true);try{await request('delete',{password:$('#delete-password').value,confirm:true},csrfToken());$('#email').value='';setMode('login','Аккаунт удален.');}catch(e){msg.textContent=e.code==='invalid_credentials'?'Неверный текущий пароль.':e.message;}finally{$('#delete-form').reset();setBusy(false);}});
-  if(hash)setMode('login','Почтовые операции пока отключены.');else checkSession();
+  if(action)setMode(action[1]);else if(hash)setMode('login',errors.invalid_or_expired_link);else checkSession();
 })();
