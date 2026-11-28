@@ -5,10 +5,12 @@ from pathlib import Path
 from sqlalchemy import text
 from app.db import engine
 from app.catalog import router as catalog_router
+from app.account_runtime import account_app
 
 app = FastAPI(title='SOYUZ Store foundation', docs_url=None, redoc_url=None, openapi_url=None)
 REVISION = '0001_foundation'
 app.include_router(catalog_router)
+app.mount('/api/v1/account', account_app)
 
 def readiness():
     db = engine()
@@ -17,6 +19,8 @@ def readiness():
             revision = conn.execute(text('SELECT version_num FROM store.alembic_version')).scalar_one()
             if revision != REVISION:
                 raise RuntimeError('schema mismatch')
+            if conn.execute(text("SELECT revision FROM store.customer_schema_revision")).scalars().all()!=['accounts_v1'] or conn.execute(text("SELECT revision FROM store.customer_mail_schema_revision")).scalars().all()!=['mail_v1']:
+                raise RuntimeError('account schema mismatch')
         return True
     except Exception:
         return False
@@ -25,12 +29,12 @@ def readiness():
 
 @app.get('/health/live')
 def live():
-    return {'status': 'ok', 'release': 'M335', 'sales_enabled': False}
+    return {'status': 'ok', 'release': 'M346', 'sales_enabled': False}
 
 @app.get('/health/ready')
 def ready():
     ok = readiness()
-    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M335', 'sales_enabled': False}, status_code=200 if ok else 503)
+    return JSONResponse({'status': 'ok' if ok else 'unavailable', 'release': 'M346', 'sales_enabled': False}, status_code=200 if ok else 503)
 
 STOREFRONT = Path(__file__).resolve().parent / 'storefront'
 app.mount('/assets', StaticFiles(directory=STOREFRONT / 'assets'), name='storefront-assets')
@@ -38,3 +42,7 @@ app.mount('/assets', StaticFiles(directory=STOREFRONT / 'assets'), name='storefr
 @app.get('/')
 def index():
     return FileResponse(STOREFRONT / 'index.html', media_type='text/html', headers={'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://ir.ozone.ru; connect-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options': 'nosniff'})
+
+@app.get('/account.html')
+def account_page():
+    return FileResponse(STOREFRONT / 'account.html', media_type='text/html', headers={'Cache-Control': 'no-store', 'Referrer-Policy':'no-referrer', 'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'", 'X-Content-Type-Options':'nosniff'})

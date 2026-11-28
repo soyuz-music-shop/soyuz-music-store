@@ -1,0 +1,8 @@
+/* M341: additive rules for existing account-page styles. */
+.account-page [hidden] { display: none !important; }
+.account-page #auth-form { display: grid; gap: 12px; }
+.account-page #auth-form label:not(.remember-row) { display: grid; gap: 5px; }
+.account-page #auth-form input:not([type=checkbox]) { min-width: 0; width: 100%; box-sizing: border-box; }
+.account-page #session { overflow-wrap: anywhere; }
+.account-page #auth-message { overflow-wrap: anywhere; }
+.account-page #auth-form button:disabled, .account-page #logout:disabled { opacity: .6; cursor: wait; }
